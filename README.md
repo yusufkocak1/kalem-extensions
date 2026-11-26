@@ -7,9 +7,9 @@ imzalar ve GitHub Pages'te yayınlar.
 | Eklenti | Ne yapar |
 |---|---|
 | `graylog` | Graylog 5/6/7'de arama, asistana log araçları |
-| `run-configurations` | IntelliJ benzeri çalıştırma ayarları: Tomcat, Maven, npm (Vue/React)… |
-| `rest-client` | Postman benzeri REST istemcisi |
-| `soap-client` | SoapUI benzeri SOAP istemcisi (WSDL'den örnek zarflar) |
+| `run-configurations` | IntelliJ benzeri çalıştırma ayarları: Tomcat (artifact'leri kendisi bulur), Maven, npm (Vue/React)… |
+| `rest-client` | Postman benzeri REST istemcisi; tarayıcıdan cURL/fetch/HAR, Postman koleksiyonu içe aktarma |
+| `soap-client` | SoapUI benzeri SOAP istemcisi (WSDL'den örnek zarflar); cURL, zarf ve WSDL dosyası içe aktarma |
 | `jenkins` | Jenkins ve içinde QuickPipeline: ortam ağacı, hızlı aksiyonlar, build takibi |
 | `log-viewer` | Log dosyalarını büyüdükçe izleme, seviye renkleri, arama |
 

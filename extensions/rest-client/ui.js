@@ -1,6 +1,8 @@
 import { el, formatSize, icon, renderBody } from "./highlight.js";
 import { translator } from "./i18n.js";
+import { isBrowserHeader, parseImport } from "./import.js";
 import {
+	fromImported,
 	AUTH_TYPES,
 	BODY_MODES,
 	METHODS,
@@ -288,6 +290,20 @@ urlInput.addEventListener("input", () => {
 	if (requestTab === "params") drawRequestTab();
 	updateCounts();
 });
+urlInput.addEventListener("paste", (event) => {
+	const text = event.clipboardData?.getData("text") ?? "";
+	if (!/^\s*(curl|fetch\s*\(|Invoke-(WebRequest|RestMethod))/i.test(text)) return;
+	const found = parseImport(text);
+	if (found.requests.length === 0) return;
+	event.preventDefault();
+	if (found.requests.length === 1) {
+		request = fromImported(found.requests[0], { isBrowserHeader });
+		response = null;
+		responseTab = "body";
+		draw();
+		flash(importButton, t("Imported"));
+	} else openImport(text);
+});
 urlInput.addEventListener("keydown", (event) => {
 	if (event.key === "Enter") void send();
 });
@@ -299,6 +315,10 @@ const sendButton = el(
 const saveButton = el("button", { class: "k-button small", onclick: () => void save() }, [
 	icon("save"),
 	document.createTextNode(t("Save")),
+]);
+const importButton = el("button", { class: "k-button ghost small", onclick: () => openImport() }, [
+	icon("download"),
+	document.createTextNode(t("Import")),
 ]);
 const curlButton = el(
 	"button",
@@ -713,6 +733,7 @@ function flash(button, text) {
 
 const dialog = el("dialog", { class: "rest-dialog" });
 function openEnvironments() {
+	dialog.className = "rest-dialog";
 	let environments = JSON.parse(JSON.stringify(data.environments));
 	let chosen =
 		environments.find((each) => each.id === data.environment)?.id ?? environments[0]?.id ?? null;
@@ -824,6 +845,209 @@ function openEnvironments() {
 	if (!dialog.open) dialog.showModal();
 }
 
+// --- Import ---------------------------------------------------------------------------
+
+const FORMATS = {
+	curl: "cURL",
+	fetch: "fetch",
+	powershell: "PowerShell",
+	http: "HTTP",
+	har: "HAR",
+	postman: "Postman",
+	url: "URL",
+};
+
+const BODY_LABELS = { json: "JSON", xml: "XML", text: "Text", form: "Form" };
+
+function openImport(initial = "") {
+	dialog.className = "rest-dialog rest-import";
+	let browserHeaders = false;
+	const input = el("textarea", {
+		class: "k-textarea k-mono rest-import-input",
+		spellcheck: "false",
+		"aria-label": t("Text to import"),
+		placeholder: "curl 'https://api.example.com/users' -H 'accept: application/json'",
+	});
+	input.value = initial;
+	const preview = el("div", { class: "rest-import-preview k-scroll" });
+	const openButton = el("button", { class: "k-button primary" });
+	const addButton = el("button", { class: "k-button" });
+	const fileInput = el("input", {
+		type: "file",
+		hidden: true,
+		accept: ".har,.json,.txt,.sh,.http,.curl",
+		"aria-label": t("Choose a file"),
+	});
+	const readFile = async (file) => {
+		input.value = await file.text();
+		update();
+	};
+	fileInput.addEventListener("change", () => {
+		if (fileInput.files?.[0]) void readFile(fileInput.files[0]);
+	});
+	input.addEventListener("dragover", (event) => event.preventDefault());
+	input.addEventListener("drop", (event) => {
+		const file = event.dataTransfer?.files?.[0];
+		if (!file) return;
+		event.preventDefault();
+		void readFile(file);
+	});
+	const keep = el("input", { type: "checkbox" });
+	keep.addEventListener("change", () => {
+		browserHeaders = keep.checked;
+		update();
+	});
+
+	let found = { format: null, requests: [] };
+	let requests = [];
+	function update() {
+		found = parseImport(input.value);
+		requests = found.requests.map((each) =>
+			fromImported(each, { browserHeaders, isBrowserHeader }),
+		);
+		const count = requests.length;
+		openButton.hidden = count !== 1;
+		addButton.hidden = count === 0;
+		addButton.className = `k-button${count > 1 ? " primary" : ""}`;
+		addButton.replaceChildren(
+			icon("plus"),
+			document.createTextNode(
+				count > 1
+					? t("Add {n} to the collection").replace("{n}", String(count))
+					: t("Add to collection"),
+			),
+		);
+		openButton.replaceChildren(document.createTextNode(t("Open")));
+		if (input.value.trim() === "") {
+			preview.replaceChildren(
+				el("p", {
+					class: "k-muted k-small",
+					text: t(
+						"In the browser's DevTools, Network tab: right-click a request › Copy › Copy as cURL (or fetch, or all as HAR), then paste it here.",
+					),
+				}),
+			);
+			return;
+		}
+		if (count === 0) {
+			preview.replaceChildren(
+				el("div", { class: "k-notice warn" }, [
+					icon("alert"),
+					el("span", {
+						text: found.error ?? t("This is not a request Kalem can read."),
+					}),
+				]),
+			);
+			return;
+		}
+		preview.replaceChildren(
+			el("div", { class: "rest-import-found" }, [
+				el("span", { class: "k-badge ok", text: FORMATS[found.format] ?? found.format }),
+				el("span", {
+					class: "k-muted k-small",
+					text: count === 1 ? t("1 request") : t("{n} requests").replace("{n}", String(count)),
+				}),
+				...(found.variables?.length
+					? [
+							el("span", {
+								class: "k-muted k-small",
+								text: t("{n} variables, as an environment").replace(
+									"{n}",
+									String(found.variables.length),
+								),
+							}),
+						]
+					: []),
+			]),
+			el(
+				"ul",
+				{ class: "k-list rest-import-list" },
+				requests.map((each) =>
+					el("li", { class: "k-list-item", title: each.url }, [
+						methodBadge(each.method),
+						el("span", { class: "k-name", text: each.name }),
+						el("span", {
+							class: "k-muted k-small rest-import-meta",
+							text: [
+								each.headers.length === 1
+									? t("1 header")
+									: each.headers.length > 1
+										? t("{n} headers").replace("{n}", String(each.headers.length))
+										: "",
+								each.body.mode !== "none" ? (BODY_LABELS[each.body.mode] ?? "") : "",
+								each.auth.type !== "none" ? each.auth.type : "",
+							]
+								.filter(Boolean)
+								.join(" · "),
+						}),
+					]),
+				),
+			),
+		);
+	}
+	input.addEventListener("input", update);
+
+	openButton.addEventListener("click", () => {
+		request = requests[0];
+		response = null;
+		responseTab = "body";
+		dialog.close();
+		draw();
+	});
+	addButton.addEventListener("click", async () => {
+		data = await kalem.call("import", {
+			requests,
+			environment: found.variables?.length
+				? {
+						name: found.name || "Postman",
+						vars: found.variables.map((row) => ({ ...row, on: true })),
+					}
+				: null,
+		});
+		side = "collection";
+		dialog.close();
+		if (requests.length === 1) request = requests[0];
+		draw();
+	});
+
+	dialog.replaceChildren(
+		el("header", { class: "rest-dialog-head" }, [
+			el("strong", { text: t("Import") }),
+			el("span", {
+				class: "k-muted k-small",
+				text: t(
+					"cURL (bash or cmd), fetch, PowerShell, a raw HTTP request, HAR or a Postman collection.",
+				),
+			}),
+		]),
+		el("div", { class: "rest-import-body" }, [
+			input,
+			el("div", { class: "rest-import-options" }, [
+				el("button", { class: "k-button small", onclick: () => fileInput.click() }, [
+					icon("file"),
+					document.createTextNode(t("Choose file…")),
+				]),
+				fileInput,
+				el("label", { class: "rest-import-check" }, [
+					keep,
+					el("span", { text: t("Keep the browser's own headers (sec-*, user-agent…)") }),
+				]),
+			]),
+			preview,
+		]),
+		el("footer", { class: "rest-dialog-foot" }, [
+			el("button", { class: "k-button ghost", onclick: () => dialog.close() }, [
+				document.createTextNode(t("Cancel")),
+			]),
+			addButton,
+			openButton,
+		]),
+	);
+	update();
+	if (!dialog.open) dialog.showModal();
+	input.focus();
+}
+
 // --- The page --------------------------------------------------------------------------
 
 function draw() {
@@ -871,6 +1095,7 @@ app.append(
 			el("div", { class: "k-toolbar rest-toolbar" }, [
 				nameInput,
 				el("span", { class: "k-spacer" }),
+				importButton,
 				curlButton,
 				saveButton,
 			]),

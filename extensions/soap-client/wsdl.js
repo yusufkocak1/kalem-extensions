@@ -26,6 +26,14 @@ function qname(node, value) {
 
 const key = (q) => (q === null ? "" : `{${q.ns}}${q.name}`);
 
+const resolve = (location, base) => {
+	try {
+		return new URL(location, base || undefined).toString();
+	} catch {
+		return null;
+	}
+};
+
 /** Reads a WSDL and the schemas it imports (`load(url)` gives a document's text). */
 export async function readWsdl(text, url, load) {
 	const doc = parse(text, url);
@@ -41,8 +49,8 @@ export async function readWsdl(text, url, load) {
 		for (const ref of [...children(schema, XSD, "import"), ...children(schema, XSD, "include")]) {
 			const location = ref.getAttribute("schemaLocation");
 			if (!location) continue;
-			const target = new URL(location, base).toString();
-			if (seen.has(target) || seen.size > 20) continue;
+			const target = resolve(location, base);
+			if (target === null || seen.has(target) || seen.size > 20) continue;
 			seen.add(target);
 			try {
 				const imported = parse(await load(target), target).documentElement;
@@ -59,8 +67,8 @@ export async function readWsdl(text, url, load) {
 	for (const imported of children(definitions, WSDL, "import")) {
 		const location = imported.getAttribute("location");
 		if (!location) continue;
-		const target = new URL(location, url).toString();
-		if (seen.has(target)) continue;
+		const target = resolve(location, url);
+		if (target === null || seen.has(target)) continue;
 		seen.add(target);
 		const part = parse(await load(target), target).documentElement;
 		if (part.namespaceURI === XSD) await addSchema(part, target, 1);

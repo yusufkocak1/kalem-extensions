@@ -51,6 +51,27 @@ const TR = {
 	"Use {{name}} in addresses, headers and bodies.":
 		"Adreslerde, başlıklarda ve gövdelerde {{ad}} olarak kullanın.",
 	Delete: "Sil",
+	Import: "İçe aktar",
+	Imported: "İçe aktarıldı",
+	"Text to import": "İçe aktarılacak metin",
+	"Choose a file": "Bir dosya seçin",
+	"Choose file…": "Dosya seç…",
+	Open: "Aç",
+	Cancel: "Vazgeç",
+	"Add to collection": "Koleksiyona ekle",
+	"Add {n} to the collection": "{n} isteği koleksiyona ekle",
+	"1 request": "1 istek",
+	"{n} requests": "{n} istek",
+	"{n} variables, as an environment": "{n} değişken, bir ortam olarak",
+	"1 header": "1 başlık",
+	"{n} headers": "{n} başlık",
+	"This is not a request Kalem can read.": "Bu, Kalem'in okuyabildiği bir istek değil.",
+	"In the browser's DevTools, Network tab: right-click a request › Copy › Copy as cURL (or fetch, or all as HAR), then paste it here.":
+		"Tarayıcının geliştirici araçlarında, Ağ (Network) sekmesinde bir isteğe sağ tıklayın › Copy › Copy as cURL (ya da fetch, ya da tümünü HAR olarak) ve buraya yapıştırın.",
+	"cURL (bash or cmd), fetch, PowerShell, a raw HTTP request, HAR or a Postman collection.":
+		"cURL (bash ya da cmd), fetch, PowerShell, ham HTTP isteği, HAR ya da Postman koleksiyonu.",
+	"Keep the browser's own headers (sec-*, user-agent…)":
+		"Tarayıcının kendi başlıklarını da al (sec-*, user-agent…)",
 };
 
 export function translator(language) {

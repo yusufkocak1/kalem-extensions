@@ -1,3 +1,4 @@
+import { findArtifacts, tomcatVersion } from "./artifacts.js";
 import { translator } from "./i18n.js";
 import {
 	localUrlIn,
@@ -310,6 +311,13 @@ export async function activate(kalem) {
 		return null;
 	});
 	await kalem.ui.handle("pick", (input) => kalem.ui.pickPath(input ?? {}));
+	await kalem.ui.handle("artifacts", async () =>
+		folder === null ? [] : findArtifacts(folder, kalem.fs, paths),
+	);
+	await kalem.ui.handle("tomcatVersion", async (input) => {
+		const home = String(input?.home ?? "").trim();
+		return home === "" ? null : tomcatVersion(paths.resolve(folder ?? "", home), kalem.fs, paths);
+	});
 	await kalem.ui.handle("scripts", async (input) => {
 		const cwd = paths.resolve(folder ?? "", input?.workingDir);
 		const file = paths.join(cwd, "package.json");

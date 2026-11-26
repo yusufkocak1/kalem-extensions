@@ -152,6 +152,9 @@ const PATHS = {
 	alert: "M12 3l10 18H2zM12 10v5M12 18h.01",
 	upload: "M12 16V4M6 10l6-6 6 6M4 20h16",
 	file: "M6 3h8l4 4v14H6zM14 3v4h4",
+	minus: "M5 12h14",
+	up: "M12 19V5M6 11l6-6 6 6",
+	down: "M12 5v14M6 13l6 6 6-6",
 };
 
 export function icon(name) {

@@ -309,6 +309,7 @@ function newConfig(type) {
 
 async function openEditor() {
 	await refresh();
+	artifactCache = null;
 	if (state.folder === null) return;
 	draft = clone(state.configurations);
 	draftIndex = Math.max(
@@ -398,88 +399,606 @@ function renderForm() {
 	const [nameId, name] = input("name");
 	view.form.append(...field(t("Name"), el("div", { class: "field" }, [name]), nameId));
 
-	for (const spec of type.fields) {
-		let id;
-		let control;
-		if (spec.kind === "checkbox") {
-			[id, control] = input(spec.key, { type: "checkbox" });
-			control.checked = config[spec.key] ?? spec.default ?? false;
-			control.addEventListener("change", () => set(spec.key, control.checked));
+	if (config.type === "tomcat") renderTomcat(config, set, input);
+	else
+		for (const spec of type.fields) {
+			let id;
+			let control;
+			if (spec.kind === "checkbox") {
+				[id, control] = input(spec.key, { type: "checkbox" });
+				control.checked = config[spec.key] ?? spec.default ?? false;
+				control.addEventListener("change", () => set(spec.key, control.checked));
+				view.form.append(
+					el("span"),
+					el("label", { class: "field" }, [control, el("span", { text: t(spec.label) })]),
+				);
+				continue;
+			}
+			if (spec.kind === "textarea" || spec.kind === "env") {
+				id = `f${++fieldCount}`;
+				control = el("textarea", {
+					id,
+					name: spec.key,
+					spellcheck: "false",
+					placeholder: t(spec.placeholder ?? ""),
+				});
+				control.value = config[spec.key] ?? "";
+				control.addEventListener("input", () => set(spec.key, control.value));
+			} else if (spec.kind === "select") {
+				id = `f${++fieldCount}`;
+				control = el(
+					"select",
+					{ id, name: spec.key },
+					spec.options.map((option) => el("option", { value: option, text: option })),
+				);
+				control.value = config[spec.key] ?? spec.default ?? spec.options[0];
+				control.addEventListener("change", () => set(spec.key, control.value));
+			} else if (spec.kind === "configurations") {
+				id = `f${++fieldCount}`;
+				control = checklist(config, spec.key, id);
+			} else {
+				[id, control] = input(spec.key, {
+					type: spec.kind === "number" ? "number" : "text",
+					placeholder: t(spec.placeholder ?? ""),
+					...(spec.kind === "script" ? { list: `scripts-${fieldCount + 1}` } : {}),
+				});
+			}
+			const children = [control];
+			if (spec.kind === "folder" || spec.kind === "file") {
+				children.push(
+					el("button", {
+						type: "button",
+						text: "…",
+						title: t("Browse"),
+						onclick: async () => {
+							const path = await attempt(() =>
+								kalem.call("pick", { folder: spec.kind === "folder", title: t(spec.label) }),
+							);
+							if (path) {
+								control.value = path;
+								set(spec.key, path);
+							}
+						},
+					}),
+				);
+			}
+			if (spec.kind === "script") {
+				const list = el("datalist", { id: control.getAttribute("list") });
+				children.push(list);
+				void kalem.call("scripts", { workingDir: config.workingDir }).then((scripts) => {
+					list.replaceChildren(...scripts.map((script) => el("option", { value: script })));
+				});
+			}
 			view.form.append(
-				el("span"),
-				el("label", { class: "field" }, [control, el("span", { text: t(spec.label) })]),
-			);
-			continue;
-		}
-		if (spec.kind === "textarea" || spec.kind === "env") {
-			id = `f${++fieldCount}`;
-			control = el("textarea", {
-				id,
-				name: spec.key,
-				spellcheck: "false",
-				placeholder: t(spec.placeholder ?? ""),
-			});
-			control.value = config[spec.key] ?? "";
-			control.addEventListener("input", () => set(spec.key, control.value));
-		} else if (spec.kind === "select") {
-			id = `f${++fieldCount}`;
-			control = el(
-				"select",
-				{ id, name: spec.key },
-				spec.options.map((option) => el("option", { value: option, text: option })),
-			);
-			control.value = config[spec.key] ?? spec.default ?? spec.options[0];
-			control.addEventListener("change", () => set(spec.key, control.value));
-		} else if (spec.kind === "configurations") {
-			id = `f${++fieldCount}`;
-			control = checklist(config, spec.key, id);
-		} else {
-			[id, control] = input(spec.key, {
-				type: spec.kind === "number" ? "number" : "text",
-				placeholder: t(spec.placeholder ?? ""),
-				...(spec.kind === "script" ? { list: `scripts-${fieldCount + 1}` } : {}),
-			});
-		}
-		const children = [control];
-		if (spec.kind === "folder" || spec.kind === "file") {
-			children.push(
-				el("button", {
-					type: "button",
-					text: "…",
-					title: t("Browse"),
-					onclick: async () => {
-						const path = await attempt(() =>
-							kalem.call("pick", { folder: spec.kind === "folder", title: t(spec.label) }),
-						);
-						if (path) {
-							control.value = path;
-							set(spec.key, path);
-						}
-					},
-				}),
+				...field(
+					t(spec.label) + (spec.required ? " *" : ""),
+					el("div", { class: "field" }, children),
+					id,
+				),
 			);
 		}
-		if (spec.kind === "script") {
-			const list = el("datalist", { id: control.getAttribute("list") });
-			children.push(list);
-			void kalem.call("scripts", { workingDir: config.workingDir }).then((scripts) => {
-				list.replaceChildren(...scripts.map((script) => el("option", { value: script })));
-			});
-		}
-		view.form.append(
-			...field(
-				t(spec.label) + (spec.required ? " *" : ""),
-				el("div", { class: "field" }, children),
-				id,
-			),
-		);
-	}
 
 	if (config.type !== "compound") {
 		view.form.append(el("h3", { text: t("Before launch") }));
 		const id = `f${++fieldCount}`;
 		view.form.append(...field(t("Run first"), checklist(config, "beforeLaunch", id), id));
 	}
+}
+
+// --- Tomcat, laid out as IntelliJ IDEA's Run/Debug Configurations dialog --------------
+
+let tomcatTab = "server";
+let deploySelected = 0;
+let artifactCache = null;
+const versions = new Map();
+
+async function artifacts(force = false) {
+	if (artifactCache === null || force)
+		artifactCache = (await attempt(() => kalem.call("artifacts"))) ?? [];
+	return artifactCache;
+}
+
+const contextOf = (artifact) =>
+	`/${artifact.path
+		.split("/")
+		.pop()
+		.replace(/\.war$/i, "")}`;
+
+const deploymentOf = (artifact) => ({
+	artifact: artifact.path,
+	id: artifact.id,
+	kind: artifact.kind,
+	module: artifact.module,
+	build: artifact.build,
+	context: contextOf(artifact),
+});
+
+/** The artifact IntelliJ would fix "No artifacts marked for deployment" with: an exploded WAR first. */
+const bestArtifact = (list) => list.find((each) => each.kind === "exploded") ?? list[0] ?? null;
+
+function tomcatDeployments(config) {
+	if (!Array.isArray(config.deployments)) {
+		config.deployments =
+			String(config.artifact ?? "").trim() === ""
+				? []
+				: [{ artifact: config.artifact, context: config.contextPath ?? "/" }];
+		delete config.artifact;
+		delete config.contextPath;
+	}
+	return config.deployments;
+}
+
+const deployIcon = (deployment) =>
+	el("span", { class: `ij-artifact-icon ${deployment.kind ?? "external"}` }, [
+		icon(deployment.kind === "exploded" ? "folder" : deployment.kind === "war" ? "globe" : "file"),
+	]);
+
+function ijRow(label, control, id) {
+	return el("div", { class: "ij-row" }, [
+		el("label", { class: "ij-label", for: id, text: label }),
+		control,
+	]);
+}
+
+function ijGroup(title, children) {
+	return el("div", { class: "ij-group" }, [
+		el("div", { class: "ij-group-title" }, [el("span", { text: title })]),
+		el("div", { class: "ij-group-body" }, children),
+	]);
+}
+
+function renderTomcat(config, set, input) {
+	const deployments = tomcatDeployments(config);
+	const urlPlaceholder = () => {
+		const path = String(deployments[0]?.context ?? "/").replace(/^\/+|\/+$/g, "");
+		return `http://localhost:${Number(config.httpPort) || 8080}/${path === "" ? "" : `${path}/`}`;
+	};
+	const tabs = el(
+		"div",
+		{ class: "ij-tabs", role: "tablist" },
+		[
+			["server", t("Server")],
+			["deployment", t("Deployment")],
+			["startup", t("Startup/Connection")],
+		].map(([id, label]) =>
+			el("button", {
+				type: "button",
+				role: "tab",
+				class: "ij-tab",
+				"data-tab": id,
+				"aria-selected": String(tomcatTab === id),
+				text: label,
+				onclick: () => {
+					tomcatTab = id;
+					renderForm();
+				},
+			}),
+		),
+	);
+	const panel = el("div", { class: "ij-panel", role: "tabpanel" });
+	view.form.append(el("div", { class: "ij-wrap" }, [tabs, panel]));
+
+	const browse = (control, key, folder, title) =>
+		el(
+			"button",
+			{
+				type: "button",
+				class: "ij-browse",
+				title: t("Browse"),
+				"aria-label": `${t("Browse")}: ${title}`,
+				onclick: async () => {
+					const path = await attempt(() => kalem.call("pick", { folder, title }));
+					if (path) {
+						control.value = path;
+						set(key, path);
+						control.dispatchEvent(new Event("change"));
+					}
+				},
+			},
+			[icon("folder")],
+		);
+
+	if (tomcatTab === "server") {
+		const [homeId, home] = input("tomcatHome", { placeholder: "C:/tools/apache-tomcat-11.0" });
+		const version = el("span", { class: "ij-version" });
+		const showVersion = async () => {
+			const path = home.value.trim();
+			if (path === "") {
+				version.textContent = "";
+				return;
+			}
+			if (!versions.has(path))
+				versions.set(path, await kalem.call("tomcatVersion", { home: path }).catch(() => null));
+			const found = versions.get(path);
+			version.textContent = found ? `Tomcat ${found}` : t("Not a Tomcat folder");
+			version.classList.toggle("bad", !found);
+			const defaultName = t(state.types.tomcat.title);
+			if (
+				found &&
+				(config.name === defaultName || /^Tomcat [\d.]+(-M\d+)?( \(\d+\))?$/.test(config.name))
+			) {
+				const before = config.name;
+				config.name = "";
+				config.name = uniqueName(`Tomcat ${found}`);
+				if (config.name !== before && draft?.[draftIndex] === config) {
+					const current = view.form.querySelector('input[name="name"]');
+					if (current) current.value = config.name;
+					renderList();
+				}
+			}
+		};
+		home.addEventListener("change", () => void showVersion());
+		home.addEventListener("blur", () => void showVersion());
+		void showVersion();
+		const configure = el("button", {
+			type: "button",
+			class: "ij-button",
+			text: t("Configure…"),
+			onclick: () => browse(home, "tomcatHome", true, t("Tomcat folder")).click(),
+		});
+		const [openId, open] = input("openBrowser", { type: "checkbox" });
+		open.checked = config.openBrowser ?? true;
+		const [urlId, url] = input("url", { placeholder: urlPlaceholder(), class: "ij-mono" });
+		url.disabled = !open.checked;
+		open.addEventListener("change", () => {
+			set("openBrowser", open.checked);
+			url.disabled = !open.checked;
+		});
+		const [vmId, vm] = input("vmOptions", {
+			placeholder: "-Xmx1g -Dspring.profiles.active=dev",
+			class: "ij-mono",
+		});
+		const [jreId, jre] = input("javaHome", {
+			placeholder: t("Default (JAVA_HOME, or java on the PATH)"),
+		});
+		const port = (key, placeholder = "") => {
+			const [id, control] = input(key, { type: "number", min: "0", max: "65535", placeholder });
+			if (config[key] === undefined || config[key] === 0) control.value = "";
+			control.addEventListener("input", () => {
+				if (control.value === "") delete config[key];
+				url.placeholder = urlPlaceholder();
+			});
+			return [id, control];
+		};
+		const [httpId, http] = port("httpPort", "8080");
+		const [ajpId, ajp] = port("ajpPort");
+		const [jmxId, jmx] = port("jmxPort");
+		panel.append(
+			ijRow(
+				t("Application server:"),
+				el("div", { class: "ij-line" }, [
+					el("div", { class: "ij-combo" }, [
+						home,
+						version,
+						browse(home, "tomcatHome", true, t("Tomcat folder")),
+					]),
+					configure,
+				]),
+				homeId,
+			),
+			ijGroup(t("Open browser"), [
+				el("div", { class: "ij-line" }, [
+					el("label", { class: "ij-check", for: openId }, [
+						open,
+						el("span", { text: t("After launch") }),
+					]),
+				]),
+				ijRow(t("URL:"), url, urlId),
+			]),
+			ijRow(t("VM options:"), vm, vmId),
+			ijRow(
+				t("JRE:"),
+				el("div", { class: "ij-combo" }, [jre, browse(jre, "javaHome", true, t("JRE"))]),
+				jreId,
+			),
+			ijGroup(t("Tomcat Server Settings"), [
+				el("div", { class: "ij-ports" }, [
+					ijRow(t("HTTP port:"), http, httpId),
+					ijRow(t("AJP port:"), ajp, ajpId),
+					ijRow(t("JMX port:"), jmx, jmxId),
+				]),
+			]),
+		);
+		if (deployments.length === 0) {
+			panel.append(
+				el("div", { class: "ij-warning" }, [
+					icon("alert"),
+					el("span", { text: t("Warning: No artifacts marked for deployment") }),
+					el("button", {
+						type: "button",
+						class: "ij-button ij-fix",
+						text: t("Fix"),
+						onclick: async () => {
+							const best = bestArtifact(await artifacts(true));
+							if (best !== null) deployments.push(deploymentOf(best));
+							tomcatTab = "deployment";
+							deploySelected = 0;
+							renderForm();
+							if (best === null)
+								say(
+									t("No WAR artifact was found in the folder: add one as an external source."),
+									true,
+								);
+						},
+					}),
+				]),
+			);
+		}
+	} else if (tomcatTab === "deployment") {
+		deploySelected = Math.max(0, Math.min(deploySelected, deployments.length - 1));
+		const move = (by) => {
+			const to = deploySelected + by;
+			if (to < 0 || to >= deployments.length) return;
+			[deployments[deploySelected], deployments[to]] = [
+				deployments[to],
+				deployments[deploySelected],
+			];
+			deploySelected = to;
+			renderForm();
+		};
+		const menu = el("div", { class: "ij-menu", hidden: true }, [
+			el("button", {
+				type: "button",
+				text: t("Artifact…"),
+				onclick: () => {
+					menu.hidden = true;
+					void pickArtifacts(config);
+				},
+			}),
+			el("button", {
+				type: "button",
+				text: t("External Source…"),
+				onclick: async () => {
+					menu.hidden = true;
+					const path = await attempt(() =>
+						kalem.call("pick", { folder: false, title: t("A WAR file") }),
+					);
+					if (!path) return;
+					deployments.push({
+						artifact: path,
+						context: `/${path
+							.split(/[\\/]/)
+							.pop()
+							.replace(/\.war$/i, "")}`,
+					});
+					deploySelected = deployments.length - 1;
+					renderForm();
+				},
+			}),
+			el("button", {
+				type: "button",
+				text: t("External Folder (exploded)…"),
+				onclick: async () => {
+					menu.hidden = true;
+					const path = await attempt(() =>
+						kalem.call("pick", { folder: true, title: t("An exploded web application") }),
+					);
+					if (!path) return;
+					deployments.push({
+						artifact: path,
+						kind: "exploded",
+						context: `/${path.split(/[\\/]/).pop()}`,
+					});
+					deploySelected = deployments.length - 1;
+					renderForm();
+				},
+			}),
+		]);
+		const tool = (mark, label, onclick, disabled = false) =>
+			el(
+				"button",
+				{
+					type: "button",
+					class: `ij-tool ${mark}`,
+					title: label,
+					"aria-label": label,
+					disabled,
+					onclick,
+				},
+				[icon(mark)],
+			);
+		const toolbar = el("div", { class: "ij-toolbar" }, [
+			tool("plus", t("Add"), (event) => {
+				event.stopPropagation();
+				menu.hidden = !menu.hidden;
+				if (!menu.hidden)
+					setTimeout(() =>
+						document.addEventListener("click", () => (menu.hidden = true), { once: true }),
+					);
+			}),
+			tool(
+				"minus",
+				t("Remove"),
+				() => {
+					deployments.splice(deploySelected, 1);
+					renderForm();
+				},
+				deployments.length === 0,
+			),
+			tool("up", t("Move up"), () => move(-1), deploySelected === 0),
+			tool("down", t("Move down"), () => move(1), deploySelected >= deployments.length - 1),
+			menu,
+		]);
+		const list = el(
+			"ul",
+			{ class: "ij-list", role: "listbox", "aria-label": t("Deploy at the server startup") },
+			deployments.length === 0
+				? [el("li", { class: "ij-empty", text: t("Nothing to deploy") })]
+				: deployments.map((deployment, index) =>
+						el(
+							"li",
+							{
+								role: "option",
+								"aria-selected": String(index === deploySelected),
+								title: deployment.artifact,
+								onclick: () => {
+									deploySelected = index;
+									renderForm();
+								},
+							},
+							[deployIcon(deployment), el("span", { text: deployment.id ?? deployment.artifact })],
+						),
+					),
+		);
+		const chosen = deployments[deploySelected];
+		const contextId = `f${++fieldCount}`;
+		const context = el("input", {
+			id: contextId,
+			type: "text",
+			spellcheck: "false",
+			placeholder: "/",
+			disabled: chosen === undefined,
+		});
+		context.value = chosen?.context ?? "";
+		context.addEventListener("input", () => {
+			if (chosen) chosen.context = context.value;
+		});
+		const [buildId, build] = input("buildArtifacts", { type: "checkbox" });
+		build.checked = config.buildArtifacts ?? true;
+		build.addEventListener("change", () => set("buildArtifacts", build.checked));
+		panel.append(
+			ijGroup(t("Deploy at the server startup"), [toolbar, list]),
+			ijRow(t("Application context:"), context, contextId),
+			el("label", { class: "ij-check", for: buildId }, [
+				build,
+				el("span", { text: t("Build the artifacts before launch (Maven package / Gradle war)") }),
+			]),
+		);
+	} else {
+		const [dirId, dir] = input("workingDir", { placeholder: t("The open folder") });
+		const envId = `f${++fieldCount}`;
+		const env = el("textarea", {
+			id: envId,
+			spellcheck: "false",
+			placeholder: t("NAME=value, one per line"),
+		});
+		env.value = config.env ?? "";
+		env.addEventListener("input", () => set("env", env.value));
+		panel.append(
+			ijRow(
+				t("Working directory:"),
+				el("div", { class: "ij-combo" }, [
+					dir,
+					browse(dir, "workingDir", true, t("Working directory")),
+				]),
+				dirId,
+			),
+			ijRow(t("Environment variables:"), env, envId),
+		);
+	}
+}
+
+const artifactDialog = el("dialog", { class: "ij-dialog" });
+document.body.append(artifactDialog);
+
+async function pickArtifacts(config) {
+	const deployments = tomcatDeployments(config);
+	const picked = new Set();
+	const draw = (list) => {
+		const free = list.filter(
+			(each) => !deployments.some((deployment) => deployment.artifact === each.path),
+		);
+		const items = el(
+			"ul",
+			{ class: "ij-list ij-pick", role: "listbox", "aria-multiselectable": "true" },
+			free.length === 0
+				? [
+						el("li", {
+							class: "ij-empty",
+							text:
+								list.length === 0
+									? t(
+											"No WAR artifact was found in the folder (a Maven module with <packaging>war</packaging>, or a Gradle build with the war plugin).",
+										)
+									: t("All of them are deployed already."),
+						}),
+					]
+				: free.map((artifact) =>
+						el(
+							"li",
+							{
+								role: "option",
+								"data-artifact": artifact.id,
+								"aria-selected": String(picked.has(artifact)),
+								title: artifact.path,
+								onclick: (event) => {
+									if (!(event.ctrlKey || event.metaKey || event.shiftKey)) picked.clear();
+									if (picked.has(artifact)) picked.delete(artifact);
+									else picked.add(artifact);
+									draw(list);
+								},
+								ondblclick: () => {
+									picked.clear();
+									picked.add(artifact);
+									ok();
+								},
+							},
+							[
+								deployIcon(artifact),
+								el("span", { text: artifact.id }),
+								...(artifact.built
+									? []
+									: [el("small", { class: "ij-unbuilt", text: t("not built yet") })]),
+							],
+						),
+					),
+		);
+		const ok = () => {
+			for (const artifact of free.filter((each) => picked.has(each)))
+				deployments.push(deploymentOf(artifact));
+			deploySelected = deployments.length - 1;
+			artifactDialog.close();
+			renderForm();
+		};
+		artifactDialog.replaceChildren(
+			el("header", { class: "ij-dialog-head" }, [
+				el("strong", { text: t("Select Artifacts to Deploy") }),
+				el(
+					"button",
+					{
+						type: "button",
+						class: "ij-close",
+						"aria-label": t("Close"),
+						onclick: () => artifactDialog.close(),
+					},
+					[icon("close")],
+				),
+			]),
+			el("p", {
+				class: "ij-dialog-hint",
+				text: t("Selected artifacts will be deployed at server startup"),
+			}),
+			items,
+			el("footer", { class: "ij-dialog-foot" }, [
+				el(
+					"button",
+					{
+						type: "button",
+						class: "ij-button ij-refresh",
+						onclick: async () => draw(await artifacts(true)),
+					},
+					[icon("refresh"), document.createTextNode(t("Refresh"))],
+				),
+				el("span", { class: "spacer" }),
+				el("button", {
+					type: "button",
+					class: "k-button primary",
+					text: t("OK"),
+					disabled: picked.size === 0,
+					onclick: ok,
+				}),
+				el("button", {
+					type: "button",
+					class: "k-button ghost",
+					text: t("Cancel"),
+					onclick: () => artifactDialog.close(),
+				}),
+			]),
+		);
+	};
+	draw(artifactCache ?? []);
+	if (!artifactDialog.open) artifactDialog.showModal();
+	draw(await artifacts(true));
 }
 
 function checklist(config, key, id) {
@@ -506,7 +1025,18 @@ function checklist(config, key, id) {
 
 view.add.addEventListener("change", () => {
 	if (view.add.value === "") return;
-	draft.push(newConfig(view.add.value));
+	const added = newConfig(view.add.value);
+	if (added.type === "tomcat") {
+		added.deployments = [];
+		tomcatTab = "server";
+		void artifacts(true).then((list) => {
+			const best = bestArtifact(list);
+			if (best === null || added.deployments.length > 0) return;
+			added.deployments.push(deploymentOf(best));
+			if (draft?.[draftIndex] === added) renderForm();
+		});
+	}
+	draft.push(added);
 	draftIndex = draft.length - 1;
 	view.add.value = "";
 	renderList();

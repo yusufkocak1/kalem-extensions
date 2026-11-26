@@ -39,6 +39,33 @@ const TR = {
 	"Sent headers": "Gönderilen başlıklar",
 	"Extra headers": "Ek başlıklar",
 	Filter: "Filtrele",
+	Import: "İçe aktar",
+	Imported: "İçe aktarılan",
+	"Imported requests": "İçe aktarılan istekler",
+	Delete: "Sil",
+	"Text to import": "İçe aktarılacak metin",
+	"Choose a file": "Bir dosya seçin",
+	"Choose file…": "Dosya seç…",
+	Open: "Aç",
+	Cancel: "Vazgeç",
+	"Open the WSDL": "WSDL'i aç",
+	"Open in {name}": "{name} içinde aç",
+	"Add {n} requests": "{n} isteği ekle",
+	"no endpoint": "uç nokta yok",
+	"Its services and operations open as if loaded from an address.":
+		"Servisleri ve operasyonları, adresten yüklenmiş gibi açılır.",
+	"No SOAP call here: the requests found carry no SOAP envelope.":
+		"Burada SOAP çağrısı yok: bulunan isteklerde SOAP zarfı yok.",
+	"This is not a SOAP call or a WSDL Kalem can read.":
+		"Bu, Kalem'in okuyabildiği bir SOAP çağrısı ya da WSDL değil.",
+	"Opens in the loaded WSDL's {name} operation.": "Yüklü WSDL'in {name} operasyonunda açılır.",
+	"Kept under Imported requests.": "İçe aktarılan istekler altında saklanır.",
+	"In the browser's DevTools, Network tab: right-click the call › Copy › Copy as cURL, then paste it here. A WSDL's text or a bare envelope works too.":
+		"Tarayıcının geliştirici araçlarında, Ağ (Network) sekmesinde çağrıya sağ tıklayın › Copy › Copy as cURL ve buraya yapıştırın. WSDL metni ya da yalnızca zarf da olur.",
+	"cURL (bash or cmd), fetch, PowerShell, a raw HTTP request, HAR, a WSDL or an envelope.":
+		"cURL (bash ya da cmd), fetch, PowerShell, ham HTTP isteği, HAR, WSDL ya da zarf.",
+	"Keep the browser's own headers (sec-*, user-agent…)":
+		"Tarayıcının kendi başlıklarını da al (sec-*, user-agent…)",
 };
 
 export function translator(language) {
