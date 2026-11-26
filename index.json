@@ -1,7 +1,7 @@
 {
 	"version": 1,
 	"name": "Kalem Eklentileri",
-	"updated": "2026-11-26T04:46:16.561Z",
+	"updated": "2026-11-26T05:16:21.400Z",
 	"extensions": [
 		{
 			"id": "kalem.graylog",
@@ -20,6 +20,24 @@
 			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPkdyYXlsb2c8L3RpdGxlPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2ZmNmI0YSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2Q5MzYzZSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSJ1cmwoI2cpIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PHBhdGggZD0iTTE2IDIyaDMyIi8+PHBhdGggZD0iTTE2IDMyaDIyIi8+PHBhdGggZD0iTTE2IDQyaDI4Ii8+PC9nPjxjaXJjbGUgY3g9IjQ2IiBjeT0iMzIiIHI9IjMuNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPgo=",
 			"sha256": "c30fbdb640186898ae32b8c5826092fa9b43a1323681290b07357dfe87d0c434",
 			"size": 12235
+		},
+		{
+			"id": "kalem.graylog",
+			"name": "Graylog",
+			"version": "1.1.0",
+			"description": "Searches Graylog (5, 6 and 7) with an access token: a panel to search and read logs with any of Graylog's fields as columns, a trend chart of messages over time (split by level, source or any field; drag to zoom), saved searches one click away, and tools that let the assistant search, count and follow trends.",
+			"publisher": "Kalem",
+			"engine": ">=3.34.0",
+			"permissions": {
+				"httpFromSettings": [
+					"url"
+				],
+				"assistantTools": true
+			},
+			"url": "kalem.graylog-1.1.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPkdyYXlsb2c8L3RpdGxlPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2ZmNmI0YSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2Q5MzYzZSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSJ1cmwoI2cpIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PHBhdGggZD0iTTE2IDIyaDMyIi8+PHBhdGggZD0iTTE2IDMyaDIyIi8+PHBhdGggZD0iTTE2IDQyaDI4Ii8+PC9nPjxjaXJjbGUgY3g9IjQ2IiBjeT0iMzIiIHI9IjMuNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPgo=",
+			"sha256": "cb4e488ec36d6e5e8fb8ed14d716090320162a105ce7874740005cb03ee4568a",
+			"size": 24047
 		},
 		{
 			"id": "kalem.jenkins",
