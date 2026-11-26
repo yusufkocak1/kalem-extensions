@@ -294,3 +294,127 @@ test("the assistant lists, runs and reads a run configuration once the user allo
 	expect(output?.text).toContain("Tests: failed (exit code 1)");
 	expect(output?.text).toContain("3 passed, 1 failed: OrderTest");
 });
+
+async function multiModuleProject(): Promise<string> {
+	const folder = await tempDir("quickres");
+	await writeFile(
+		join(folder, "pom.xml"),
+		`<project><modelVersion>4.0.0</modelVersion><groupId>acme</groupId><artifactId>quickres</artifactId><version>1.0</version><packaging>pom</packaging>
+<modules><module>webapp</module><module>core</module></modules></project>`,
+	);
+	await mkdir(join(folder, "webapp", "target", "quickres", "WEB-INF"), { recursive: true });
+	await writeFile(join(folder, "webapp", "target", "quickres", "index.html"), "<h1>quickres</h1>");
+	await writeFile(
+		join(folder, "webapp", "pom.xml"),
+		`<project><modelVersion>4.0.0</modelVersion>
+<parent><groupId>acme</groupId><artifactId>quickres</artifactId><version>1.0</version></parent>
+<artifactId>quickres.webapp</artifactId><packaging>war</packaging>
+<dependencies><dependency><artifactId>quickres.core</artifactId></dependency></dependencies>
+<build><finalName>quickres</finalName></build></project>`,
+	);
+	await mkdir(join(folder, "core"), { recursive: true });
+	await writeFile(
+		join(folder, "core", "pom.xml"),
+		`<project><parent><artifactId>quickres</artifactId><version>1.0</version></parent><artifactId>quickres.core</artifactId></project>`,
+	);
+	return folder;
+}
+
+test("a Tomcat configuration finds the folder's WAR artifacts as IntelliJ does, and deploys those picked", async () => {
+	const folder = await multiModuleProject();
+	const { app, page, errors } = await launchWith(folder);
+	const pane = await installRunner(app, page);
+	await pane.getByRole("button", { name: "Edit Configurations…" }).click();
+	await pane.locator("#add").selectOption({ label: "Tomcat Server (local)" });
+	await expect(pane.getByRole("tab", { name: "Server" })).toHaveAttribute("aria-selected", "true");
+	await expect(pane.locator(".ij-group-title").first()).toHaveText("Open browser");
+
+	await pane.getByRole("tab", { name: "Deployment" }).click();
+	const list = pane.getByRole("listbox", { name: "Deploy at the server startup" });
+	await expect(list.getByRole("option")).toHaveText(["quickres.webapp:war exploded"]);
+	await expect(pane.getByLabel("Application context:")).toHaveValue("/quickres");
+
+	await pane.getByRole("button", { name: "Add", exact: true }).click();
+	await pane.getByRole("button", { name: "Artifact…" }).click();
+	const dialog = pane.locator(".ij-dialog");
+	await expect(dialog).toContainText("Select Artifacts to Deploy");
+	await expect(dialog.getByRole("option")).toHaveText(["quickres.webapp:warnot built yet"]);
+	await dialog.getByRole("option").click();
+	await dialog.getByRole("button", { name: "OK" }).click();
+	await expect(list.getByRole("option")).toHaveCount(2);
+	await pane.getByLabel("Application context:").fill("/quickres-war");
+
+	await pane.getByRole("tab", { name: "Server" }).click();
+	await pane.getByLabel("Application server:").fill("/opt/tomcat");
+	await pane.getByLabel("HTTP port:").fill("1453");
+	await expect(pane.getByLabel("URL:")).toHaveAttribute(
+		"placeholder",
+		"http://localhost:1453/quickres/",
+	);
+	await pane.getByRole("button", { name: "Save" }).click();
+	await expect(pane.locator("#editor")).toBeHidden();
+
+	const stored = JSON.parse(await readFile(join(folder, ".kalem", "run.json"), "utf8"));
+	expect(stored.configurations[0]).toMatchObject({
+		type: "tomcat",
+		tomcatHome: "/opt/tomcat",
+		httpPort: 1453,
+		buildArtifacts: true,
+		deployments: [
+			{
+				id: "quickres.webapp:war exploded",
+				artifact: "webapp/target/quickres",
+				kind: "exploded",
+				module: "webapp",
+				build: "maven",
+				context: "/quickres",
+			},
+			{
+				id: "quickres.webapp:war",
+				artifact: "webapp/target/quickres.war",
+				context: "/quickres-war",
+			},
+		],
+	});
+	expect(errors).toEqual([]);
+});
+
+test("Tomcat deploys each artifact of its list at its own context, and is named after its version", async () => {
+	test.skip(
+		TOMCAT === "" || !existsSync(join(TOMCAT, "bin", "catalina.sh")),
+		"KALEM_TEST_TOMCAT is not set.",
+	);
+	test.setTimeout(120_000);
+	const folder = await multiModuleProject();
+	await mkdir(join(folder, "admin", "WEB-INF"), { recursive: true });
+	await writeFile(join(folder, "admin", "index.html"), "<h1>admin</h1>");
+	const port = await freePort();
+	const { app, page } = await launchWith(folder);
+	const pane = await installRunner(app, page);
+	await pane.getByRole("button", { name: "Edit Configurations…" }).click();
+	await pane.locator("#add").selectOption({ label: "Tomcat Server (local)" });
+	await pane.getByLabel("Application server:").fill(TOMCAT);
+	await pane.getByLabel("Application server:").blur();
+	await expect(pane.locator(".ij-version")).toHaveText(/^Tomcat \d+\.\d+\.\d+$/);
+	await expect(pane.locator('input[name="name"]')).toHaveValue(/^Tomcat \d+\.\d+\.\d+$/);
+	await pane.getByLabel("HTTP port:").fill(String(port));
+	await pane.getByRole("tab", { name: "Deployment" }).click();
+	await pane.getByLabel(/Build the artifacts before launch/).uncheck();
+	await pane.getByRole("button", { name: "Save" }).click();
+	await expect(pane.locator("#editor")).toBeHidden();
+
+	const file = join(folder, ".kalem", "run.json");
+	const stored = JSON.parse(await readFile(file, "utf8"));
+	stored.configurations[0].deployments.push({ artifact: "admin", context: "/admin" });
+	await writeFile(file, JSON.stringify(stored));
+	await pane.getByRole("button", { name: "Run", exact: true }).click();
+	const output = pane.locator(".output");
+	await expect(output).toContainText("Server startup in", { timeout: 60_000 });
+	await expect.poll(() => opened(app)).toEqual([`http://localhost:${port}/quickres/`]);
+	expect(await (await fetch(`http://localhost:${port}/quickres/`)).text()).toBe(
+		"<h1>quickres</h1>",
+	);
+	expect(await (await fetch(`http://localhost:${port}/admin/`)).text()).toBe("<h1>admin</h1>");
+	await pane.getByRole("button", { name: "Stop", exact: true }).click();
+	await expect(output).toContainText("Process finished with exit code");
+});

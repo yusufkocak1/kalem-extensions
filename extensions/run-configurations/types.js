@@ -1,3 +1,5 @@
+import { buildStepOf } from "./artifacts.js";
+
 /**
  * The kinds of run configuration: the fields each one's form shows, and
  * how a configuration becomes a program to run. Pure but for `fs`.
@@ -85,7 +87,7 @@ const xml = (text) =>
 		.replace(/"/g, "&quot;");
 
 /** A Tomcat of its own for the configuration: its ports, nothing else of the installed one's server.xml. */
-export function tomcatServerXml(httpPort) {
+export function tomcatServerXml(httpPort, ajpPort = 0, xmlBase = null) {
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <!-- Made by Kalem's Run Configurations for this configuration; it is written again at each run. -->
 <Server port="-1" shutdown="SHUTDOWN">
@@ -99,16 +101,22 @@ export function tomcatServerXml(httpPort) {
   </GlobalNamingResources>
   <Service name="Catalina">
     <Connector port="${Number(httpPort)}" protocol="HTTP/1.1" connectionTimeout="20000" />
-    <Engine name="Catalina" defaultHost="localhost">
+${Number(ajpPort) > 0 ? `    <Connector port="${Number(ajpPort)}" protocol="AJP/1.3" address="127.0.0.1" secretRequired="false" />\n` : ""}    <Engine name="Catalina" defaultHost="localhost">
       <Realm className="org.apache.catalina.realm.LockOutRealm">
         <Realm className="org.apache.catalina.realm.UserDatabaseRealm" resourceName="UserDatabase" />
       </Realm>
-      <Host name="localhost" appBase="webapps" unpackWARs="true" autoDeploy="false" deployOnStartup="true" />
+      <Host name="localhost" appBase="webapps" unpackWARs="true" autoDeploy="false" deployOnStartup="true"${xmlBase ? ` xmlBase="${xml(xmlBase)}"` : ""} />
     </Engine>
   </Service>
 </Server>
 `;
 }
+
+const hash = (text) => {
+	let value = 5381;
+	for (const char of text) value = ((value * 33) ^ char.charCodeAt(0)) >>> 0;
+	return value.toString(36);
+};
 
 /** `/order/api` → `order#api.xml`; `/` → `ROOT.xml`. */
 export function contextFileName(contextPath) {
@@ -119,6 +127,21 @@ export function contextFileName(contextPath) {
 export function contextUrl(port, contextPath) {
 	const path = String(contextPath ?? "").replace(/^\/+|\/+$/g, "");
 	return `http://localhost:${port}/${path === "" ? "" : `${path}/`}`;
+}
+
+/** What a Tomcat configuration deploys: its list, or the single artifact of older ones. */
+export function deploymentsOf(config) {
+	if (Array.isArray(config.deployments))
+		return config.deployments.filter((each) => each && String(each.artifact ?? "").trim() !== "");
+	return String(config.artifact ?? "").trim() === ""
+		? []
+		: [{ artifact: config.artifact, context: config.contextPath ?? "/" }];
+}
+
+/** The address the browser opens after launch. */
+export function tomcatUrl(config) {
+	if (String(config.url ?? "").trim() !== "") return config.url.trim();
+	return contextUrl(Number(config.httpPort) || 8080, deploymentsOf(config)[0]?.context ?? "/");
 }
 
 const COMMON = [
@@ -384,34 +407,24 @@ export const TYPES = {
 		fields: [
 			{
 				key: "tomcatHome",
-				label: "Tomcat folder",
+				label: "Application server",
 				kind: "folder",
 				placeholder: "C:/tools/apache-tomcat-10.1",
 				required: true,
 			},
-			{
-				key: "artifact",
-				label: "Deployment (WAR or exploded folder)",
-				kind: "file",
-				placeholder: "target/app.war",
-				required: true,
-			},
-			{
-				key: "contextPath",
-				label: "Application context",
-				kind: "text",
-				placeholder: "/app",
-				default: "/",
-			},
+			{ key: "openBrowser", label: "After launch", kind: "checkbox", default: true },
+			{ key: "url", label: "URL", kind: "text" },
+			VM_OPTIONS,
+			{ ...JAVA_HOME, label: "JRE" },
 			{ key: "httpPort", label: "HTTP port", kind: "number", default: 8080 },
+			{ key: "ajpPort", label: "AJP port", kind: "number" },
+			{ key: "jmxPort", label: "JMX port", kind: "number" },
 			{
-				key: "openBrowser",
-				label: "Open the browser when Tomcat has started",
+				key: "buildArtifacts",
+				label: "Build the artifacts before launch",
 				kind: "checkbox",
 				default: true,
 			},
-			VM_OPTIONS,
-			JAVA_HOME,
 			...COMMON,
 		],
 		async build(config, ctx, name) {
@@ -424,12 +437,30 @@ export const TYPES = {
 			);
 			if (!(await fs.exists(script)))
 				throw new Error(ctx.t('{0} is not there: is "{1}" a Tomcat folder?', script, home));
-			const artifact = paths.resolve(ctx.folder, config.artifact);
-			if (!(await fs.exists(artifact)))
-				throw new Error(ctx.t("{0} is not there yet: build it first (Before launch).", artifact));
+			const deployments = deploymentsOf(config).map((each) => ({
+				...each,
+				path: paths.resolve(ctx.folder, each.artifact),
+			}));
+			if (deployments.length === 0) throw new Error(ctx.t("No artifacts marked for deployment."));
+			const steps = [];
+			if (config.buildArtifacts !== false) {
+				const modules = new Set();
+				for (const each of deployments) {
+					if (!each.build || modules.has(`${each.build} ${each.module}`)) continue;
+					modules.add(`${each.build} ${each.module}`);
+					steps.push(await buildStepOf(each, ctx.folder, fs, paths, ctx.platform));
+				}
+			}
 			const port = Number(config.httpPort) || 8080;
+			const jmx = Number(config.jmxPort) || 0;
 			const base = paths.join(ctx.folder, ".kalem", "run", "tomcat", slug(name));
 			const prepare = async () => {
+				for (const each of deployments) {
+					if (!(await fs.exists(each.path)))
+						throw new Error(
+							ctx.t("{0} is not there yet: build it first (Before launch).", each.path),
+						);
+				}
 				await fs.writeText(paths.join(ctx.folder, ".kalem", "run", ".gitignore"), "*\n");
 				for (const folder of ["conf", "logs", "temp", "webapps", "work"])
 					await fs.mkdir(paths.join(base, folder));
@@ -437,12 +468,31 @@ export const TYPES = {
 					if (entry.name === "server.xml" || entry.name === "Catalina") continue;
 					await fs.copy(paths.join(home, "conf", entry.name), paths.join(base, "conf", entry.name));
 				}
-				await fs.writeText(paths.join(base, "conf", "server.xml"), tomcatServerXml(port));
-				await fs.writeText(
-					paths.join(base, "conf", "Catalina", "localhost", contextFileName(config.contextPath)),
-					`<?xml version="1.0" encoding="UTF-8"?>\n<Context docBase="${xml(artifact)}" />\n`,
+				const wanted = new Set(deployments.map((each) => contextFileName(each.context)));
+				const standard = paths.join(base, "conf", "Catalina", "localhost");
+				const stale = (await fs.list(standard).catch(() => [])).some(
+					(entry) => entry.name.endsWith(".xml") && !wanted.has(entry.name),
 				);
+				// Files cannot be deleted from here: another list goes to a folder of its own.
+				const xmlBase = stale
+					? `conf/Catalina/localhost-${hash([...wanted].sort().join("|"))}`
+					: null;
+				const contexts = xmlBase ? paths.join(base, ...xmlBase.split("/")) : standard;
+				await fs.mkdir(contexts);
+				await fs.writeText(
+					paths.join(base, "conf", "server.xml"),
+					tomcatServerXml(port, Number(config.ajpPort) || 0, xmlBase),
+				);
+				for (const each of deployments)
+					await fs.writeText(
+						paths.join(contexts, contextFileName(each.context)),
+						`<?xml version="1.0" encoding="UTF-8"?>\n<Context docBase="${xml(each.path)}" />\n`,
+					);
 			};
+			const jmxOptions =
+				jmx > 0
+					? `-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=${jmx} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false`
+					: "";
 			return {
 				command: ctx.platform === "win32" ? script : "sh",
 				args: ctx.platform === "win32" ? ["run"] : [script, "run"],
@@ -450,12 +500,13 @@ export const TYPES = {
 				env: {
 					CATALINA_HOME: home,
 					CATALINA_BASE: base,
-					CATALINA_OPTS: [JAVA_UTF8, config.vmOptions ?? ""].join(" ").trim(),
+					CATALINA_OPTS: [JAVA_UTF8, jmxOptions, config.vmOptions ?? ""].join(" ").trim(),
 					...(config.javaHome ? { JAVA_HOME: config.javaHome, JRE_HOME: config.javaHome } : {}),
 				},
+				steps,
 				prepare,
 				ready: /Server startup in/,
-				openUrl: config.openBrowser === false ? null : contextUrl(port, config.contextPath),
+				openUrl: config.openBrowser === false ? null : tomcatUrl(config),
 			};
 		},
 	},
@@ -489,6 +540,8 @@ export function problemsOf(
 		if (field.required && !String(config[field.key] ?? "").trim())
 			problems.push(t("{0} is empty.", t(field.label)));
 	}
+	if (config.type === "tomcat" && deploymentsOf(config).length === 0)
+		problems.push(t("No artifacts marked for deployment."));
 	for (const other of [...(config.beforeLaunch ?? []), ...(config.configurations ?? [])]) {
 		if (!names.includes(other)) problems.push(t('There is no configuration named "{0}".', other));
 	}
