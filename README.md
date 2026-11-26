@@ -15,7 +15,7 @@ imzalar ve GitHub Pages'te yayınlar.
 
 ## Kalem'e eklemek
 
-Kalem 3.37.0 ve sonrasında bu katalog Market'te hazır gelir. Elle eklemek için
+Kalem 3.38.0 ve sonrasında bu katalog Market'te hazır gelir. Elle eklemek için
 Eklentiler › Eklentileri Yönet… › **Kataloglar**:
 
 - **index.json adresi:** `https://yusufkocak1.github.io/kalem-extensions/index.json`
