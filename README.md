@@ -15,10 +15,11 @@ imzalar ve GitHub Pages'te yayınlar.
 
 ## Kalem'e eklemek
 
+Kalem 3.37.0 ve sonrasında bu katalog Market'te hazır gelir. Elle eklemek için
 Eklentiler › Eklentileri Yönet… › **Kataloglar**:
 
 - **index.json adresi:** `https://yusufkocak1.github.io/kalem-extensions/index.json`
-- **Açık anahtar:** `ANAHTAR_BURAYA` (`keys/public-key.txt`)
+- **Açık anahtar:** `MCowBQYDK2VwAyEAefVQwZSxeRXlfROTZMXbOEQHRId/rGxZKMWl4flq4NI=`
 
 ## Bir kez: kurulum
 
@@ -34,8 +35,6 @@ node tools/extension-registry.mjs keygen keys
 2. Actions › Publish catalog › **Run workflow** ile ilk yayını yapın.
    `gh-pages` dalı oluşur.
 3. Settings › Pages › Source: **Deploy from a branch**, `gh-pages` / `(root)`.
-4. `keys/public-key.txt` içindeki anahtarı yukarıdaki `ANAHTAR_BURAYA`
-   yerine yazın. Kullanıcılara verilecek olan budur.
 
 ## Eklenti eklemek veya güncellemek
 
