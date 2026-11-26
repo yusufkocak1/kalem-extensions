@@ -20,7 +20,7 @@ const SKIPPED = new Set([
 	".gradle",
 	".mvn",
 ]);
-const MAX_DEPTH = 4;
+const MAX_DEPTH = 6;
 
 const withoutComments = (text) => text.replace(/<!--[\s\S]*?-->/g, "");
 const tag = (text, name) => new RegExp(`<${name}>\\s*([^<]*?)\\s*</${name}>`).exec(text)?.[1] ?? "";
@@ -56,7 +56,7 @@ export function readPom(text) {
 	return {
 		artifactId,
 		version,
-		packaging: tag(own, "packaging") || "jar",
+		packaging: expand(tag(own, "packaging")) || "jar",
 		finalName,
 		modules: [...source.matchAll(/<module>\s*([^<]+?)\s*<\/module>/g)].map((match) => match[1]),
 	};
@@ -67,26 +67,90 @@ const usesWarPlugin = (text) =>
 		text,
 	);
 
-/**
- * `[{ id, kind: "war" | "exploded", path, module, build, built }]`; `path` and
- * `module` are relative to the folder, `build` says how to make it.
- */
-export async function findArtifacts(folder, fs, paths) {
+/** `$PROJECT_DIR$/out/artifacts/x` in an IntelliJ artifact file, as a path under the folder. */
+const projectPath = (text) =>
+	String(text ?? "")
+		.trim()
+		.replace(/^\$PROJECT_DIR\$\/?/, "")
+		.replace(/\\/g, "/");
+
+/** The artifacts IntelliJ IDEA keeps in `.idea/artifacts/*.xml` (only web ones: war, exploded war). */
+async function ideaArtifacts(folder, fs, paths) {
+	const dir = paths.join(folder, ".idea", "artifacts");
+	let entries;
+	try {
+		entries = await fs.list(dir);
+	} catch {
+		return [];
+	}
 	const found = [];
-	const seenDirs = [];
+	for (const entry of entries) {
+		if (!entry.name.endsWith(".xml")) continue;
+		const text = await fs.readText(paths.join(dir, entry.name)).catch(() => "");
+		const head = /<artifact\b([^>]*)>/.exec(text)?.[1] ?? "";
+		const type = /\btype="([^"]+)"/.exec(head)?.[1] ?? "";
+		const name = /\bname="([^"]+)"/.exec(head)?.[1] ?? entry.name.replace(/\.xml$/, "");
+		const output = projectPath(tag(text, "output-path"));
+		if (output === "" || output.startsWith("$")) continue;
+		if (type === "exploded-war")
+			found.push({ id: name, kind: "exploded", path: output, module: "", build: null });
+		else if (type === "war") {
+			const file = /<root\b[^>]*\bid="archive"[^>]*\bname="([^"]+)"/.exec(text)?.[1];
+			if (file)
+				found.push({ id: name, kind: "war", path: `${output}/${file}`, module: "", build: null });
+		}
+	}
+	return found;
+}
+
+/** WARs and exploded web applications already built under `target`, `build/libs` or `out/artifacts`. */
+async function builtOutputs(folder, relative, fs, paths) {
+	const found = [];
+	for (const outDir of ["target", "build/libs", "out/artifacts"]) {
+		const base = [relative, outDir].filter(Boolean).join("/");
+		let entries;
+		try {
+			entries = await fs.list(paths.join(folder, ...base.split("/")));
+		} catch {
+			continue;
+		}
+		for (const entry of entries) {
+			const path = `${base}/${entry.name}`;
+			if (entry.type === "file" && /\.war$/i.test(entry.name)) {
+				found.push({ id: path, kind: "war", path, module: relative, build: null });
+			} else if (
+				entry.type === "folder" &&
+				(await fs.exists(paths.join(folder, ...path.split("/"), "WEB-INF")))
+			) {
+				found.push({ id: path, kind: "exploded", path, module: relative, build: null });
+			}
+		}
+	}
+	return found;
+}
+
+/**
+ * What a folder holds to deploy: `{ artifacts, poms }`. Each artifact is
+ * `{ id, kind: "war" | "exploded", path, module, build, built }` with `path` and
+ * `module` relative to the folder and `build` saying how to make it; `poms`
+ * lists the Maven projects seen with their packaging, to say why none is found.
+ */
+export async function scanArtifacts(folder, fs, paths) {
+	const found = [];
+	const poms = [];
 	const walk = async (relative, depth) => {
-		const dir = relative === "" ? folder : paths.join(folder, relative);
+		const dir = relative === "" ? folder : paths.join(folder, ...relative.split("/"));
 		let entries;
 		try {
 			entries = await fs.list(dir);
 		} catch {
 			return;
 		}
-		seenDirs.push(relative);
 		const names = new Set(entries.map((entry) => entry.name));
 		const rel = (...parts) => [relative, ...parts].filter(Boolean).join("/");
 		if (names.has("pom.xml")) {
 			const pom = readPom(await fs.readText(paths.join(dir, "pom.xml")).catch(() => ""));
+			poms.push({ path: rel("pom.xml"), artifactId: pom.artifactId, packaging: pom.packaging });
 			const module = pom.artifactId || relative.split("/").pop() || "app";
 			if (pom.packaging === "war") {
 				found.push(
@@ -129,6 +193,7 @@ export async function findArtifacts(folder, fs, paths) {
 				});
 			}
 		}
+		found.push(...(await builtOutputs(folder, relative, fs, paths)));
 		if (depth >= MAX_DEPTH) return;
 		for (const entry of entries) {
 			if (entry.type !== "folder" || SKIPPED.has(entry.name) || entry.name.startsWith("."))
@@ -136,10 +201,25 @@ export async function findArtifacts(folder, fs, paths) {
 			await walk(rel(entry.name), depth + 1);
 		}
 	};
+	found.push(...(await ideaArtifacts(folder, fs, paths)));
 	await walk("", 0);
-	for (const artifact of found)
+	const byPath = new Map();
+	for (const artifact of found) {
+		const key = artifact.path.replace(/\/+$/, "");
+		const known = byPath.get(key);
+		// What a build tool or IntelliJ names wins over a bare path.
+		if (known === undefined || (known.id === known.path && artifact.id !== artifact.path))
+			byPath.set(key, { ...artifact, path: key, build: artifact.build ?? known?.build ?? null });
+	}
+	const artifacts = [...byPath.values()];
+	for (const artifact of artifacts)
 		artifact.built = await fs.exists(paths.join(folder, ...artifact.path.split("/")));
-	return found.sort((a, b) => a.id.localeCompare(b.id) || (a.kind === "war" ? -1 : 1));
+	artifacts.sort((a, b) => a.id.localeCompare(b.id) || (a.kind === "war" ? -1 : 1));
+	return { artifacts, poms };
+}
+
+export async function findArtifacts(folder, fs, paths) {
+	return (await scanArtifacts(folder, fs, paths)).artifacts;
 }
 
 /** The command that builds an artifact's module, from the folder's root project. */

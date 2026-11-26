@@ -492,9 +492,16 @@ let deploySelected = 0;
 let artifactCache = null;
 const versions = new Map();
 
-async function artifacts(force = false) {
-	if (artifactCache === null || force)
-		artifactCache = (await attempt(() => kalem.call("artifacts"))) ?? [];
+let lastScan = { artifacts: [], poms: [], roots: [] };
+
+/** The web artifacts of the configuration's working directory and the open folders. */
+async function artifacts(config, force = false) {
+	if (artifactCache === null || force) {
+		lastScan = (await attempt(() =>
+			kalem.call("artifacts", { workingDir: config?.workingDir ?? "" }),
+		)) ?? { artifacts: [], poms: [], roots: [] };
+		artifactCache = lastScan.artifacts;
+	}
 	return artifactCache;
 }
 
@@ -509,6 +516,7 @@ const deploymentOf = (artifact) => ({
 	id: artifact.id,
 	kind: artifact.kind,
 	module: artifact.module,
+	...(artifact.project ? { project: artifact.project } : {}),
 	build: artifact.build,
 	context: contextOf(artifact),
 });
@@ -709,7 +717,7 @@ function renderTomcat(config, set, input) {
 						class: "ij-button ij-fix",
 						text: t("Fix"),
 						onclick: async () => {
-							const best = bestArtifact(await artifacts(true));
+							const best = bestArtifact(await artifacts(config, true));
 							if (best !== null) deployments.push(deploymentOf(best));
 							tomcatTab = "deployment";
 							deploySelected = 0;
@@ -866,6 +874,14 @@ function renderTomcat(config, set, input) {
 		);
 	} else {
 		const [dirId, dir] = input("workingDir", { placeholder: t("The open folder") });
+		dir.addEventListener("change", async () => {
+			artifactCache = null;
+			if (deployments.length > 0) return;
+			const best = bestArtifact(await artifacts(config, true));
+			if (best === null || deployments.length > 0) return;
+			deployments.push(deploymentOf(best));
+			if (draft?.[draftIndex] === config && tomcatTab !== "startup") renderForm();
+		});
 		const envId = `f${++fieldCount}`;
 		const env = el("textarea", {
 			id: envId,
@@ -903,15 +919,29 @@ async function pickArtifacts(config) {
 			{ class: "ij-list ij-pick", role: "listbox", "aria-multiselectable": "true" },
 			free.length === 0
 				? [
-						el("li", {
-							class: "ij-empty",
-							text:
-								list.length === 0
-									? t(
-											"No WAR artifact was found in the folder (a Maven module with <packaging>war</packaging>, or a Gradle build with the war plugin).",
-										)
-									: t("All of them are deployed already."),
-						}),
+						list.length === 0
+							? el("li", { class: "ij-empty ij-scan" }, [
+									el("strong", {
+										text: t(
+											"No WAR artifact was found (a Maven module with <packaging>war</packaging>, a Gradle build with the war plugin, an IntelliJ artifact in .idea/artifacts, or a built .war or exploded folder).",
+										),
+									}),
+									el("span", {
+										text: `${t("Looked in:")} ${lastScan.roots.join(", ") || t("no open folder")}`,
+									}),
+									el("span", {
+										text:
+											lastScan.poms.length === 0
+												? t(
+														"No pom.xml was found there. Set the project folder as the Working directory (Startup/Connection).",
+													)
+												: `${t("Maven projects seen:")} ${lastScan.poms
+														.slice(0, 12)
+														.map((pom) => `${pom.artifactId || pom.path} (${pom.packaging})`)
+														.join(", ")}${lastScan.poms.length > 12 ? "…" : ""}`,
+									}),
+								])
+							: el("li", { class: "ij-empty", text: t("All of them are deployed already.") }),
 					]
 				: free.map((artifact) =>
 						el(
@@ -975,7 +1005,7 @@ async function pickArtifacts(config) {
 					{
 						type: "button",
 						class: "ij-button ij-refresh",
-						onclick: async () => draw(await artifacts(true)),
+						onclick: async () => draw(await artifacts(config, true)),
 					},
 					[icon("refresh"), document.createTextNode(t("Refresh"))],
 				),
@@ -998,7 +1028,7 @@ async function pickArtifacts(config) {
 	};
 	draw(artifactCache ?? []);
 	if (!artifactDialog.open) artifactDialog.showModal();
-	draw(await artifacts(true));
+	draw(await artifacts(config, true));
 }
 
 function checklist(config, key, id) {
@@ -1029,7 +1059,7 @@ view.add.addEventListener("change", () => {
 	if (added.type === "tomcat") {
 		added.deployments = [];
 		tomcatTab = "server";
-		void artifacts(true).then((list) => {
+		void artifacts(added, true).then((list) => {
 			const best = bestArtifact(list);
 			if (best === null || added.deployments.length > 0) return;
 			added.deployments.push(deploymentOf(best));

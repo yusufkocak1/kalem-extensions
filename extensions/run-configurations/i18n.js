@@ -128,8 +128,13 @@ const TR = {
 	"Select Artifacts to Deploy": "Dağıtılacak Artifact'leri Seçin",
 	"Selected artifacts will be deployed at server startup":
 		"Seçilen artifact'ler sunucu açılışında dağıtılır",
-	"No WAR artifact was found in the folder (a Maven module with <packaging>war</packaging>, or a Gradle build with the war plugin).":
-		"Klasörde WAR artifact'i bulunamadı (<packaging>war</packaging> olan bir Maven modülü ya da war eklentili bir Gradle projesi).",
+	"No WAR artifact was found (a Maven module with <packaging>war</packaging>, a Gradle build with the war plugin, an IntelliJ artifact in .idea/artifacts, or a built .war or exploded folder).":
+		"WAR artifact'i bulunamadı (<packaging>war</packaging> olan bir Maven modülü, war eklentili bir Gradle projesi, .idea/artifacts içinde bir IntelliJ artifact'i ya da derlenmiş bir .war veya açılmış klasör aranır).",
+	"Looked in:": "Bakılan yerler:",
+	"no open folder": "açık klasör yok",
+	"No pom.xml was found there. Set the project folder as the Working directory (Startup/Connection).":
+		"Orada pom.xml bulunamadı. Proje klasörünü Çalışma klasörü olarak seçin (Başlatma/Bağlantı).",
+	"Maven projects seen:": "Görülen Maven projeleri:",
 	"All of them are deployed already.": "Hepsi zaten dağıtımda.",
 	"not built yet": "henüz derlenmedi",
 	Refresh: "Yenile",
