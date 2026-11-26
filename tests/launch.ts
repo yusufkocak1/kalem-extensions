@@ -1,0 +1,166 @@
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { ElectronApplication, Page } from "@playwright/test";
+import { _electron as electron, expect } from "@playwright/test";
+import { ELECTRON, KALEM_DESKTOP } from "./paths.js";
+
+const appDir = KALEM_DESKTOP;
+
+export interface LaunchOptions {
+	/** Reuse a profile from an earlier launch. */
+	readonly userData?: string;
+	readonly args?: readonly string[];
+	readonly settings?: Record<string, unknown>;
+	readonly welcomed?: boolean;
+	/** Extra environment variables for the app. */
+	readonly env?: Record<string, string>;
+}
+
+export interface Launched {
+	readonly app: ElectronApplication;
+	readonly page: Page;
+	readonly userData: string;
+	/** Uncaught renderer errors and console errors seen so far. */
+	readonly errors: string[];
+}
+
+export async function tempDir(prefix: string): Promise<string> {
+	return mkdtemp(join(tmpdir(), `kalem-${prefix}-`));
+}
+
+export async function launch(options: LaunchOptions = {}): Promise<Launched> {
+	const userData = options.userData ?? (await tempDir("profile"));
+	if (options.userData === undefined) {
+		await mkdir(userData, { recursive: true });
+		await writeFile(
+			join(userData, "settings.json"),
+			JSON.stringify({
+				// Saving a Confluence page saves at once, as before its changes' view; a test turns the view on.
+				settings: {
+					language: "en",
+					theme: "light",
+					confluenceReviewBeforeSave: false,
+					// Closing asks about unsaved tabs, as before sessions were kept; a test turns them on.
+					restoreSession: false,
+					// The document goes with each question, as before it was offered faded; a test turns that off.
+					assistantDocumentAuto: true,
+					// Kalem's own catalog is on the internet; a test that wants a market adds its own.
+					kalemCatalog: false,
+					...options.settings,
+				},
+				welcomed: options.welcomed ?? true,
+			}),
+		);
+	}
+
+	// Inherited when the tests are started from an Electron-based host (VS Code);
+	// it would make the app start as plain Node.
+	const { ELECTRON_RUN_AS_NODE: _runAsNode, ...env } = process.env;
+	const app = await electron.launch({
+		executablePath: ELECTRON,
+		args: [appDir, ...(options.args ?? [])],
+		env: {
+			...(env as Record<string, string>),
+			KALEM_USER_DATA_DIR: userData,
+			KALEM_DEV_URL: "",
+			KALEM_VERSION_INTERVAL: "0",
+			// The account's Copilot models are not asked of GitHub in tests.
+			KALEM_COPILOT_MODELS: "off",
+			...options.env,
+		},
+		// Playwright forces a light colour scheme by default, which would hide the app's own theme.
+		colorScheme: null,
+	});
+	const page = await app.firstWindow();
+	const errors: string[] = [];
+	page.on("pageerror", (error) => errors.push(error.message));
+	page.on("console", (message) => {
+		if (message.type() === "error") errors.push(message.text());
+	});
+	await page.locator("#editor [contenteditable]").first().waitFor();
+	return { app, page, userData, errors };
+}
+
+export async function stubSaveDialog(app: ElectronApplication, filePath: string): Promise<void> {
+	await app.evaluate(({ dialog }, path) => {
+		dialog.showSaveDialog = (async (...args: unknown[]) => {
+			const options = (args.length > 1 ? args[1] : args[0]) as Electron.SaveDialogOptions;
+			(globalThis as { lastSaveDialog?: unknown }).lastSaveDialog = {
+				defaultPath: options.defaultPath,
+				filters: options.filters,
+			};
+			return { canceled: false, filePath: path };
+		}) as typeof dialog.showSaveDialog;
+	}, filePath);
+}
+
+/** What the app asked the (stubbed) save dialog for the last time. */
+export async function lastSaveDialog(
+	app: ElectronApplication,
+): Promise<{ defaultPath?: string; filters?: Electron.FileFilter[] }> {
+	return app.evaluate(
+		() =>
+			(globalThis as { lastSaveDialog?: { defaultPath?: string; filters?: Electron.FileFilter[] } })
+				.lastSaveDialog ?? {},
+	);
+}
+
+/** Makes every message box answer with the given button index. */
+export async function stubMessageBox(app: ElectronApplication, response: number): Promise<void> {
+	await app.evaluate(({ dialog }, index) => {
+		dialog.showMessageBox = async () => ({ response: index, checkboxChecked: false });
+	}, response);
+}
+
+/** Answers every message box with the given button index and returns the messages asked so far. */
+export async function recordMessageBoxes(
+	app: ElectronApplication,
+	response: number,
+): Promise<() => Promise<string[]>> {
+	await app.evaluate(({ dialog }, index) => {
+		const asked: string[] = [];
+		(globalThis as { messageBoxes?: string[] }).messageBoxes = asked;
+		dialog.showMessageBox = (async (...args: unknown[]) => {
+			asked.push((args.at(-1) as { message: string }).message);
+			return { response: index, checkboxChecked: false };
+		}) as typeof dialog.showMessageBox;
+	}, response);
+	return () => app.evaluate(() => (globalThis as { messageBoxes?: string[] }).messageBoxes ?? []);
+}
+
+/** Clicks an application menu item by its label path, e.g. `["File", "Save As…"]`. */
+export async function clickMenu(app: ElectronApplication, ...labels: string[]): Promise<void> {
+	await app.evaluate(({ Menu, BrowserWindow }, path) => {
+		let items = Menu.getApplicationMenu()?.items ?? [];
+		let found: Electron.MenuItem | undefined;
+		for (const label of path) {
+			found = items.find((item) => item.label === label);
+			if (found === undefined) throw new Error(`Menu item not found: ${path.join(" > ")}`);
+			items = found.submenu?.items ?? [];
+		}
+		const window = BrowserWindow.getAllWindows()[0];
+		found?.click(undefined, window, window?.webContents);
+	}, labels);
+}
+
+export async function stubOpenDialog(app: ElectronApplication, filePaths: string[]): Promise<void> {
+	await app.evaluate(({ dialog }, paths) => {
+		dialog.showOpenDialog = async () => ({ canceled: false, filePaths: paths });
+	}, filePaths);
+}
+
+/** Shows a pane through its tab on the window's edge; a tab already shown is left as it is. */
+export async function showPane(page: Page, pane: string): Promise<void> {
+	const tab = page.locator(`.stripe-button[data-pane="${pane}"]`);
+	await tab.waitFor();
+	if ((await tab.getAttribute("aria-pressed")) !== "true") await tab.click();
+	await expect(tab).toHaveAttribute("aria-pressed", "true");
+}
+
+/** Settings is a tab beside the documents: closing its tab is what Done was. */
+export async function closeSettings(page: Page): Promise<void> {
+	const tab = page.locator('.doc-tab[data-page="settings"]');
+	await tab.locator(".doc-tab-close").click();
+	await expect(tab).toHaveCount(0);
+}

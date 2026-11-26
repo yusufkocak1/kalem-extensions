@@ -1,10 +1,12 @@
-# Every folder of extensions/ is an extension. A push to main packs the new
-# versions, signs index.json and publishes it on GitHub Pages (gh-pages),
-# keeping the versions published before.
+# Every folder of extensions/ is an extension. Once the tests pass on main,
+# the new versions are packed with Kalem's own tools, index.json is signed
+# and published on GitHub Pages (gh-pages), keeping the versions published before.
 name: Publish catalog
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Test extensions"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -17,9 +19,19 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Kalem's catalog tools
+        uses: actions/checkout@v4
+        with:
+          repository: yusufkocak1/kalem
+          path: kalem
+          sparse-checkout: apps/desktop/scripts
 
       - name: Check the signing key
         env:
@@ -47,8 +59,8 @@ jobs:
         env:
           KALEM_REGISTRY_KEY: ${{ secrets.KALEM_REGISTRY_KEY }}
         run: |
-          npm install --prefix tools --no-audit --no-fund
-          node tools/extension-registry.mjs build extensions site \
+          npm install --prefix kalem/apps/desktop/scripts --no-audit --no-fund --no-save jszip@3.10.1
+          node kalem/apps/desktop/scripts/extension-registry.mjs build extensions site \
             --name "${{ vars.CATALOG_NAME || 'Kalem Eklentileri' }}" \
             --blocked blocked.json
 

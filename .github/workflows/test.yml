@@ -1,0 +1,63 @@
+# Each extension is tested in a real Kalem: Kalem's main (or the ref given
+# when run by hand) is built, and the tests in tests/ install the extensions
+# from extensions/ into it.
+name: Test extensions
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      kalem_ref:
+        description: "Kalem branch, tag or commit to test against"
+        default: main
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: yusufkocak1/kalem
+          ref: ${{ inputs.kalem_ref || 'main' }}
+          path: kalem
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: kalem/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build Kalem
+        working-directory: kalem
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm --dir apps/desktop build
+
+      - name: Test tools
+        run: npm ci --no-audit --no-fund
+
+      - name: Run the tests
+        env:
+          KALEM_DIR: ${{ github.workspace }}/kalem
+        run: xvfb-run -a npx playwright test --trace retain-on-failure
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

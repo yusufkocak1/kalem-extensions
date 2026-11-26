@@ -21,20 +21,55 @@ Eklentiler › Eklentileri Yönet… › **Kataloglar**:
 - **index.json adresi:** `https://yusufkocak1.github.io/kalem-extensions/index.json`
 - **Açık anahtar:** `MCowBQYDK2VwAyEAefVQwZSxeRXlfROTZMXbOEQHRId/rGxZKMWl4flq4NI=`
 
-## Bir kez: kurulum
+## Geliştirme
+
+Eklentiler gerçek bir Kalem'in içinde test edilir. Bu reponun yanında
+`kalem` reposunun derlenmiş bir kopyası olmalı (varsayılan `../kalem`,
+başka bir yer için `KALEM_DIR`):
 
 ```sh
-npm install --prefix tools
-node tools/extension-registry.mjs keygen keys
+# ../kalem içinde bir kez
+pnpm install && pnpm build && pnpm --dir apps/desktop build
+
+# burada
+npm install
+npx playwright test                 # hepsi
+npx playwright test tests/jenkins   # biri
 ```
 
-1. `keys/private.pem` dosyasının **içeriğini** GitHub'da
+Linux'ta ekransız ortamda `xvfb-run -a npx playwright test`. Tomcat testi
+yalnızca `KALEM_TEST_TOMCAT` bir Tomcat klasörünü gösterdiğinde çalışır.
+
+Eklenti API'si (`window.kalem`, izinler, panel kiti) Kalem'in belgelerinde:
+`kalem` reposunda `apps/desktop/extension-samples/README.md`. En küçük
+örnek oradaki `hello-api`.
+
+### Akış
+
+1. Bir dal açın, `extensions/<ad>/` altında değişikliği yapın,
+   `manifest.json` içinde `version` değerini artırın.
+2. PR açın: **Test extensions** işi Kalem'in `main`'ini derleyip testleri
+   çalıştırır. Yeni bir çekirdek API'si gerekiyorsa önce `kalem`'e girer;
+   işi elle çalıştırıp `kalem_ref` ile o dalı seçebilirsiniz.
+3. PR birleşince testler `main`'de tekrar çalışır, geçerse **Publish
+   catalog** yeni sürümü imzalayıp yayınlar.
+
+## Bir kez: imza anahtarı
+
+Paketleme ve imzalama araçları `kalem` reposunda
+(`apps/desktop/scripts/`), CI onları oradan alır.
+
+```sh
+node ../kalem/apps/desktop/scripts/extension-registry.mjs keygen keys
+```
+
+1. `keys/private.pem` dosyasının **içeriğini** bu reponun
    Settings › Secrets and variables › Actions › **New repository secret**
-   olarak `KALEM_REGISTRY_KEY` adıyla ekleyin. Dosyayı hiçbir yere commit
+   bölümüne `KALEM_REGISTRY_KEY` adıyla ekleyin. Dosyayı hiçbir yere commit
    etmeyin (`.gitignore` zaten dışarıda tutar).
-2. Actions › Publish catalog › **Run workflow** ile ilk yayını yapın.
-   `gh-pages` dalı oluşur.
-3. Settings › Pages › Source: **Deploy from a branch**, `gh-pages` / `(root)`.
+2. Settings › Pages › Source: **Deploy from a branch**, `gh-pages` / `(root)`.
+3. Anahtar değişirse Kalem'deki gömülü açık anahtar da değişmeli
+   (`apps/desktop/src/shared/extension-registry.ts` › `KALEM_REGISTRY`).
 
 ## Eklenti eklemek veya güncellemek
 
@@ -60,7 +95,7 @@ Push'tan sonraki kontrolde kurulu olduğu her yerde kapatılır.
 
 ```sh
 KALEM_REGISTRY_KEY="$(cat keys/private.pem)" \
-  node tools/extension-registry.mjs build extensions site --name "Kalem Eklentileri" --blocked blocked.json
+  node ../kalem/apps/desktop/scripts/extension-registry.mjs build extensions site --name "Kalem Eklentileri" --blocked blocked.json
 ```
 
 `site/` klasörünü herhangi bir web sunucusuna kopyalayın.
