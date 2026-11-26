@@ -446,9 +446,11 @@ export const TYPES = {
 			if (config.buildArtifacts !== false) {
 				const modules = new Set();
 				for (const each of deployments) {
-					if (!each.build || modules.has(`${each.build} ${each.module}`)) continue;
-					modules.add(`${each.build} ${each.module}`);
-					steps.push(await buildStepOf(each, ctx.folder, fs, paths, ctx.platform));
+					const key = `${each.build} ${each.project ?? ""} ${each.module}`;
+					if (!each.build || modules.has(key)) continue;
+					modules.add(key);
+					const project = each.project ? paths.resolve(ctx.folder, each.project) : ctx.folder;
+					steps.push(await buildStepOf(each, project, fs, paths, ctx.platform));
 				}
 			}
 			const port = Number(config.httpPort) || 8080;

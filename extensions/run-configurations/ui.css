@@ -845,3 +845,17 @@ body.k-app {
 .ij-dialog-foot .spacer {
 	flex: 1;
 }
+
+.ij-list li.ij-scan {
+	display: grid;
+	gap: 6px;
+	padding: 12px;
+	line-height: 1.45;
+	white-space: normal;
+	user-select: text;
+}
+
+.ij-scan strong {
+	color: var(--k-text);
+	font-weight: 600;
+}

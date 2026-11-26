@@ -418,3 +418,66 @@ test("Tomcat deploys each artifact of its list at its own context, and is named 
 	await pane.getByRole("button", { name: "Stop", exact: true }).click();
 	await expect(output).toContainText("Process finished with exit code");
 });
+
+test("a Tomcat configuration finds the artifacts of its working directory, IntelliJ's own and those built, and says where it looked", async () => {
+	const notes = await tempDir("notes");
+	const project = await tempDir("legacy");
+	await mkdir(join(project, ".idea", "artifacts"), { recursive: true });
+	await writeFile(
+		join(project, ".idea", "artifacts", "quickres_webapp_war_exploded.xml"),
+		`<component name="ArtifactManager">
+  <artifact type="exploded-war" name="quickres.webapp:war exploded">
+    <output-path>$PROJECT_DIR$/out/artifacts/quickres_webapp_war_exploded</output-path>
+    <root id="root"><element id="javaee-facet-resources" facet="quickres.webapp/web/Web" /></root>
+  </artifact>
+</component>`,
+	);
+	await mkdir(join(project, "admin", "target", "admin-1.0", "WEB-INF"), { recursive: true });
+	await writeFile(join(project, "admin", "target", "legacy.war"), "");
+	const { app, page, errors } = await launchWith(notes);
+	const pane = await installRunner(app, page);
+	await pane.getByRole("button", { name: "Edit Configurations…" }).click();
+	await pane.locator("#add").selectOption({ label: "Tomcat Server (local)" });
+	await pane.getByRole("tab", { name: "Deployment" }).click();
+	await pane.getByRole("button", { name: "Add", exact: true }).click();
+	await pane.getByRole("button", { name: "Artifact…" }).click();
+	const dialog = pane.locator(".ij-dialog");
+	await expect(dialog.locator(".ij-scan")).toContainText(`Looked in: ${notes}`);
+	await expect(dialog.locator(".ij-scan")).toContainText("No pom.xml was found there");
+	await dialog.getByRole("button", { name: "Cancel" }).click();
+
+	await pane.getByRole("tab", { name: "Startup/Connection" }).click();
+	await pane.getByLabel("Working directory:").fill(project);
+	await pane.getByRole("tab", { name: "Deployment" }).click();
+	const list = pane.getByRole("listbox", { name: "Deploy at the server startup" });
+	await expect(list.getByRole("option")).toHaveText(["admin/target/admin-1.0"]);
+	await pane.locator(".ij-tool.minus").click();
+	await pane.getByRole("button", { name: "Add", exact: true }).click();
+	await pane.getByRole("button", { name: "Artifact…" }).click();
+	await expect(dialog.getByRole("option")).toHaveText([
+		"admin/target/admin-1.0",
+		"admin/target/legacy.war",
+		"quickres.webapp:war explodednot built yet",
+	]);
+	await dialog.getByRole("option").last().dblclick();
+	await expect(pane.getByLabel("Application context:")).toHaveValue(
+		"/quickres_webapp_war_exploded",
+	);
+	await pane.getByRole("tab", { name: "Server" }).click();
+	await pane.getByLabel("Application server:").fill("/opt/tomcat");
+	await pane.getByRole("button", { name: "Save" }).click();
+	await expect(pane.locator("#editor")).toBeHidden();
+	const stored = JSON.parse(await readFile(join(notes, ".kalem", "run.json"), "utf8"));
+	expect(stored.configurations[0].deployments).toEqual([
+		{
+			artifact: join(project, "out", "artifacts", "quickres_webapp_war_exploded"),
+			id: "quickres.webapp:war exploded",
+			kind: "exploded",
+			module: "",
+			build: null,
+			project,
+			context: "/quickres_webapp_war_exploded",
+		},
+	]);
+	expect(errors).toEqual([]);
+});

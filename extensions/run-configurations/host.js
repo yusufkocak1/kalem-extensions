@@ -1,4 +1,4 @@
-import { findArtifacts, tomcatVersion } from "./artifacts.js";
+import { scanArtifacts, tomcatVersion } from "./artifacts.js";
 import { translator } from "./i18n.js";
 import {
 	localUrlIn,
@@ -311,9 +311,28 @@ export async function activate(kalem) {
 		return null;
 	});
 	await kalem.ui.handle("pick", (input) => kalem.ui.pickPath(input ?? {}));
-	await kalem.ui.handle("artifacts", async () =>
-		folder === null ? [] : findArtifacts(folder, kalem.fs, paths),
-	);
+	/** The web artifacts of the configuration's working directory and of every open folder. */
+	await kalem.ui.handle("artifacts", async (input) => {
+		const folders = await kalem.workspace.folders();
+		const base = folder ?? folders[0] ?? null;
+		const roots = [];
+		const workingDir = String(input?.workingDir ?? "").trim();
+		if (workingDir !== "" && base !== null) roots.push(paths.resolve(base, workingDir));
+		for (const each of folders) if (!roots.includes(each)) roots.push(each);
+		const artifacts = [];
+		const poms = [];
+		for (const root of roots) {
+			const scan = await scanArtifacts(root, kalem.fs, paths);
+			const inBase = root === base;
+			for (const artifact of scan.artifacts) {
+				const path = inBase ? artifact.path : paths.join(root, ...artifact.path.split("/"));
+				if (artifacts.some((each) => each.path === path)) continue;
+				artifacts.push({ ...artifact, path, project: inBase ? "" : root });
+			}
+			for (const pom of scan.poms) poms.push({ ...pom, root });
+		}
+		return { artifacts, poms, roots };
+	});
 	await kalem.ui.handle("tomcatVersion", async (input) => {
 		const home = String(input?.home ?? "").trim();
 		return home === "" ? null : tomcatVersion(paths.resolve(folder ?? "", home), kalem.fs, paths);
