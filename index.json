@@ -1,7 +1,7 @@
 {
 	"version": 1,
 	"name": "Kalem Eklentileri",
-	"updated": "2026-11-26T05:17:31.164Z",
+	"updated": "2026-11-26T07:34:45.410Z",
 	"extensions": [
 		{
 			"id": "kalem.graylog",
@@ -92,6 +92,24 @@
 			"size": 17170
 		},
 		{
+			"id": "kalem.rest-client",
+			"name": "REST Client",
+			"version": "1.1.0",
+			"description": "Sends HTTP requests as Postman does: a saved collection, environments with {{variables}}, parameters, headers, JSON, XML and form bodies, Bearer, Basic and API key auth, and the response pretty and coloured. The assistant can send requests too, when you allow each one. Import a request copied from the browser (cURL, fetch, PowerShell, HAR), a raw HTTP request or a Postman collection; pasting a cURL command into the address opens it.",
+			"publisher": "Kalem",
+			"engine": ">=3.36.0",
+			"permissions": {
+				"http": [
+					"*"
+				],
+				"assistantTools": true
+			},
+			"url": "kalem.rest-client-1.1.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlJFU1QgQ2xpZW50PC90aXRsZT48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZjhhM2QiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNlMjUzMWMiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0idXJsKCNnKSIvPjxwYXRoIGQ9Ik0xNCAzNGwzNC0xNS05IDI3LTYtMTEtMTktMXoiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMzMgMzVsMTUtMTYiIHN0cm9rZT0iI2UyNTMxYyIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPgo=",
+			"sha256": "3a038f6b3c9b6c36a3b95fc9a4cf6dd263b6e0fd5db58e4bc78d0574aef4e1d7",
+			"size": 28290
+		},
+		{
 			"id": "kalem.run-configurations",
 			"name": "Run Configurations",
 			"version": "1.0.0",
@@ -107,6 +125,23 @@
 			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlJ1biBDb25maWd1cmF0aW9uczwvdGl0bGU+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMzRjMzhmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTI3YTViIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNMjUgMTkuNXYyNWEyIDIgMCAwIDAgMy4wNSAxLjdsMjAtMTIuNWEyIDIgMCAwIDAgMC0zLjRsLTIwLTEyLjVBMiAyIDAgMCAwIDI1IDE5LjV6IiBmaWxsPSIjZmZmIi8+PC9zdmc+Cg==",
 			"sha256": "0434943cebea52f0f7091464e3b6feeffbbcd5f8a0300f7d8e7729f2c98b1954",
 			"size": 22688
+		},
+		{
+			"id": "kalem.run-configurations",
+			"name": "Run Configurations",
+			"version": "1.1.0",
+			"description": "Runs your applications as an IDE does: Tomcat, Java applications and JARs, Maven, Gradle, npm scripts (Vue, React, Angular…) and any command, with their output in a Run panel. The configurations are kept in the folder (.kalem/run.json), to share with the team. Tomcat is set up as in IntelliJ IDEA: the WAR and exploded artifacts of the folder's Maven and Gradle modules are found and built before launch, several deployed each at its own context.",
+			"publisher": "Kalem",
+			"engine": ">=3.35.0",
+			"permissions": {
+				"process": true,
+				"files": true,
+				"assistantTools": true
+			},
+			"url": "kalem.run-configurations-1.1.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlJ1biBDb25maWd1cmF0aW9uczwvdGl0bGU+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMzRjMzhmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTI3YTViIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNMjUgMTkuNXYyNWEyIDIgMCAwIDAgMy4wNSAxLjdsMjAtMTIuNWEyIDIgMCAwIDAgMC0zLjRsLTIwLTEyLjVBMiAyIDAgMCAwIDI1IDE5LjV6IiBmaWxsPSIjZmZmIi8+PC9zdmc+Cg==",
+			"sha256": "1bd8b2ff022f204e29b5e60b9d757d6d3d3d1fdd76164a2df734c2403bacc7c1",
+			"size": 32250
 		},
 		{
 			"id": "kalem.soap-client",
@@ -125,6 +160,24 @@
 			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlNPQVAgQ2xpZW50PC90aXRsZT48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyZmI1ZDYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxNzY5YWEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0idXJsKCNnKSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIyIDIybC04IDEwIDggMTAiLz48cGF0aCBkPSJNNDIgMjJsOCAxMC04IDEwIi8+PC9nPjxjaXJjbGUgY3g9IjI3IiBjeT0iMzIiIHI9IjIuNiIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjM3IiBjeT0iMzIiIHI9IjIuNiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPgo=",
 			"sha256": "b6b01fa9b0a90f59c5d0ab90bb10204b87495aeffdde877a48095f37dbf731d9",
 			"size": 17866
+		},
+		{
+			"id": "kalem.soap-client",
+			"name": "SOAP Client",
+			"version": "1.1.0",
+			"description": "Calls SOAP web services from their WSDL, as SoapUI does: the services, endpoints and operations listed, a sample envelope made from the schema for each, SOAP 1.1 and 1.2, Basic auth, the response pretty and coloured, and faults shown as such. The assistant can read a WSDL and call it, when you allow each call. Import a call copied from the browser as cURL (or fetch, PowerShell, HAR, raw HTTP), a bare envelope, or a WSDL from a file.",
+			"publisher": "Kalem",
+			"engine": ">=3.36.0",
+			"permissions": {
+				"http": [
+					"*"
+				],
+				"assistantTools": true
+			},
+			"url": "kalem.soap-client-1.1.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlNPQVAgQ2xpZW50PC90aXRsZT48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyZmI1ZDYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxNzY5YWEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0idXJsKCNnKSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIyIDIybC04IDEwIDggMTAiLz48cGF0aCBkPSJNNDIgMjJsOCAxMC04IDEwIi8+PC9nPjxjaXJjbGUgY3g9IjI3IiBjeT0iMzIiIHI9IjIuNiIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjM3IiBjeT0iMzIiIHI9IjIuNiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPgo=",
+			"sha256": "8a6f055a9c57fa2e90acdebb55dddcf61f5a9a9e58c8f7717f8d069134bf6d95",
+			"size": 29932
 		}
 	],
 	"blocked": []
