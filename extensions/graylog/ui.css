@@ -140,3 +140,512 @@
 .graylog-error {
 	padding: 12px;
 }
+
+.graylog-bar .k-button.icon {
+	width: 34px;
+}
+
+.graylog-bar .k-button[aria-pressed="true"] {
+	background: var(--k-accent-soft);
+	color: var(--k-accent);
+}
+
+/* Saved searches */
+
+.graylog-saved {
+	display: flex;
+	flex: none;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--k-soft-line);
+}
+
+.graylog-saved[hidden] {
+	display: none;
+}
+
+.graylog-saved-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	color: var(--k-muted);
+	font-size: 12px;
+}
+
+.graylog-saved-label svg {
+	width: 14px;
+	height: 14px;
+	color: #c99a1a;
+}
+
+.graylog-chip {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid var(--k-soft-line);
+	border-radius: 999px;
+	background: var(--k-panel);
+	font-size: 12px;
+}
+
+.graylog-chip:hover {
+	border-color: var(--k-accent);
+}
+
+.graylog-chip-run {
+	padding: 3px 4px 3px 11px;
+	border: 0;
+	background: none;
+	color: var(--k-text);
+	font: inherit;
+	cursor: pointer;
+}
+
+.graylog-chip-remove {
+	display: inline-flex;
+	padding: 3px 7px 3px 3px;
+	border: 0;
+	background: none;
+	color: var(--k-muted);
+	cursor: pointer;
+}
+
+.graylog-chip-remove svg {
+	width: 12px;
+	height: 12px;
+}
+
+.graylog-chip-remove:hover {
+	color: var(--k-error);
+}
+
+/* Trend */
+
+.graylog-trend {
+	flex: none;
+	padding: 8px 12px 6px;
+	border-bottom: 1px solid var(--k-soft-line);
+	background: color-mix(in srgb, var(--k-panel) 55%, var(--k-bg));
+}
+
+.graylog-trend[hidden] {
+	display: none;
+}
+
+.graylog-trend-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	font-size: 12px;
+}
+
+.graylog-trend-head strong {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.graylog-trend-head strong svg {
+	width: 15px;
+	height: 15px;
+	color: var(--k-accent);
+}
+
+.graylog-split-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--k-muted);
+}
+
+.graylog-split {
+	width: 150px;
+	height: 28px;
+	font-size: 12px;
+}
+
+.graylog-chart {
+	min-height: 120px;
+	padding-top: 6px;
+}
+
+.graylog-plot {
+	position: relative;
+	height: 130px;
+	padding-bottom: 16px;
+	cursor: crosshair;
+	touch-action: none;
+	user-select: none;
+}
+
+.graylog-svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+
+.graylog-grid {
+	stroke: var(--k-soft-line);
+	stroke-width: 1;
+	vector-effect: non-scaling-stroke;
+}
+
+.graylog-hit {
+	fill: transparent;
+}
+
+.graylog-bar:hover .graylog-hit {
+	fill: var(--k-hover);
+}
+
+.graylog-fill.total,
+.graylog-swatch.total {
+	fill: var(--k-accent);
+	background: var(--k-accent);
+}
+
+.graylog-fill.error,
+.graylog-swatch.error {
+	fill: var(--k-error);
+	background: var(--k-error);
+}
+
+.graylog-fill.warn,
+.graylog-swatch.warn {
+	fill: #d4952a;
+	background: #d4952a;
+}
+
+.graylog-fill.info,
+.graylog-swatch.info {
+	fill: #3b82c4;
+	background: #3b82c4;
+}
+
+.graylog-fill.s0,
+.graylog-swatch.s0 {
+	fill: #2a9d8f;
+	background: #2a9d8f;
+}
+
+.graylog-fill.s1,
+.graylog-swatch.s1 {
+	fill: #5b7fd6;
+	background: #5b7fd6;
+}
+
+.graylog-fill.s2,
+.graylog-swatch.s2 {
+	fill: #e07a5f;
+	background: #e07a5f;
+}
+
+.graylog-fill.s3,
+.graylog-swatch.s3 {
+	fill: #9c6ade;
+	background: #9c6ade;
+}
+
+.graylog-fill.s4,
+.graylog-swatch.s4 {
+	fill: #c9a227;
+	background: #c9a227;
+}
+
+.graylog-fill.s5,
+.graylog-swatch.s5 {
+	fill: #d1607c;
+	background: #d1607c;
+}
+
+.graylog-fill.other,
+.graylog-swatch.other {
+	fill: color-mix(in srgb, var(--k-muted) 45%, transparent);
+	background: color-mix(in srgb, var(--k-muted) 45%, transparent);
+}
+
+.graylog-axis-y span,
+.graylog-axis-x span {
+	position: absolute;
+	color: var(--k-muted);
+	font-size: 10.5px;
+	font-variant-numeric: tabular-nums;
+	pointer-events: none;
+}
+
+.graylog-axis-y span {
+	left: 0;
+	transform: translateY(50%);
+}
+
+.graylog-axis-x span {
+	bottom: 0;
+	white-space: nowrap;
+	transform: translateX(-50%);
+}
+
+.graylog-selection {
+	position: absolute;
+	top: 0;
+	bottom: 16px;
+	border: 1px solid var(--k-accent);
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--k-accent) 14%, transparent);
+	pointer-events: none;
+}
+
+.graylog-tip {
+	position: absolute;
+	top: 4px;
+	z-index: 2;
+	min-width: 140px;
+	padding: 7px 10px;
+	border: 1px solid var(--k-line);
+	border-radius: var(--k-radius);
+	background: var(--k-panel);
+	box-shadow: var(--k-shadow);
+	font-size: 12px;
+	pointer-events: none;
+}
+
+.graylog-tip-row,
+.graylog-legend-item {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.graylog-swatch {
+	flex: none;
+	width: 9px;
+	height: 9px;
+	border-radius: 2px;
+}
+
+.graylog-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 14px;
+	padding-top: 4px;
+	font-size: 12px;
+}
+
+/* Field names and values: a click opens their menu */
+
+.graylog-field-name,
+.graylog-value {
+	padding: 0;
+	border: 0;
+	border-radius: 3px;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.graylog-field-name:hover,
+.graylog-value:hover {
+	background: var(--k-accent-soft);
+	color: var(--k-accent);
+}
+
+.graylog-value {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+.graylog-menu {
+	position: fixed;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	min-width: 220px;
+	max-width: 360px;
+	padding: 5px;
+	border: 1px solid var(--k-line);
+	border-radius: var(--k-radius-lg);
+	background: var(--k-panel);
+	box-shadow: 0 10px 30px rgb(0 0 0 / 18%);
+}
+
+.graylog-menu-heading {
+	padding: 5px 9px 4px;
+	overflow: hidden;
+	color: var(--k-muted);
+	font-size: 11.5px;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.graylog-menu-line {
+	height: 1px;
+	margin: 4px 2px;
+	background: var(--k-soft-line);
+}
+
+.graylog-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 6px 9px;
+	border: 0;
+	border-radius: 7px;
+	background: none;
+	color: var(--k-text);
+	font: inherit;
+	font-size: 13px;
+	text-align: left;
+}
+
+.graylog-menu-item:hover,
+.graylog-menu-item:focus-visible {
+	background: var(--k-hover);
+	outline: none;
+}
+
+.graylog-menu-item svg {
+	width: 15px;
+	height: 15px;
+	color: var(--k-muted);
+}
+
+.graylog-top {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.graylog-top-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1.4fr) minmax(80px, 1fr) auto auto auto;
+	align-items: center;
+	gap: 10px;
+	padding: 3px 4px;
+	border-radius: 6px;
+	font-size: 12.5px;
+}
+
+.graylog-top-row:hover {
+	background: var(--k-hover);
+}
+
+.graylog-top-value {
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.graylog-top-bar {
+	height: 8px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: var(--k-hover);
+}
+
+.graylog-top-bar span {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--k-accent);
+}
+
+.graylog-top-count {
+	color: var(--k-muted);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+/* Dialogs */
+
+.graylog-dialog {
+	width: min(440px, calc(100vw - 32px));
+	max-height: calc(100vh - 32px);
+	padding: 0;
+	border: 1px solid var(--k-line);
+	border-radius: var(--k-radius-lg);
+	background: var(--k-panel);
+	color: var(--k-text);
+	box-shadow: 0 20px 60px rgb(0 0 0 / 28%);
+}
+
+.graylog-dialog.wide {
+	width: min(620px, calc(100vw - 32px));
+}
+
+.graylog-dialog::backdrop {
+	background: rgb(0 0 0 / 30%);
+}
+
+.graylog-dialog-body {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 16px 18px;
+}
+
+.graylog-dialog-body h2 {
+	margin: 0;
+	font-size: 15px;
+}
+
+.graylog-dialog-body > p {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.graylog-field {
+	display: grid;
+	gap: 5px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.graylog-dialog-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 4px;
+}
+
+.graylog-field-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: 2px 12px;
+	max-height: 48vh;
+	padding: 6px;
+	overflow: auto;
+	border: 1px solid var(--k-soft-line);
+	border-radius: var(--k-radius);
+}
+
+.graylog-field-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	padding: 4px 6px;
+	border-radius: 6px;
+	font-size: 12.5px;
+	cursor: pointer;
+}
+
+.graylog-field-item:hover {
+	background: var(--k-hover);
+}
+
+.graylog-field-item .k-mono {
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.graylog-field-item .k-badge {
+	margin-left: auto;
+	font-size: 10px;
+}

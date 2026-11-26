@@ -152,6 +152,11 @@ const PATHS = {
 	alert: "M12 3l10 18H2zM12 10v5M12 18h.01",
 	upload: "M12 16V4M6 10l6-6 6 6M4 20h16",
 	file: "M6 3h8l4 4v14H6zM14 3v4h4",
+	star: "M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z",
+	columns: "M4 5h16v14H4zM10 5v14M15 5v14",
+	chart: "M4 20h16M7 16v-5M11 16V7M15 16v-3M19 16V9",
+	minus: "M5 12h14",
+	zoomOut: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4M8 11h6",
 };
 
 export function icon(name) {

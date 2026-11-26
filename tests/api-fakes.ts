@@ -7,7 +7,6 @@ import { expect } from "@playwright/test";
 import { clickMenu, stubOpenDialog, tempDir } from "./launch.js";
 import { EXTENSIONS, PACK } from "./paths.js";
 
-
 export interface Seen {
 	readonly method: string;
 	readonly url: string;
