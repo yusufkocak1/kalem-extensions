@@ -1,7 +1,7 @@
 {
   "id": "kalem.run-configurations",
   "name": "Run Configurations",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Runs your applications as an IDE does: Tomcat, Java applications and JARs, Maven, Gradle, npm scripts (Vue, React, Angular…) and any command, with their output in a Run panel. The configurations are kept in the folder (.kalem/run.json), to share with the team. Tomcat is set up as in IntelliJ IDEA: the WAR and exploded artifacts of the folder's Maven and Gradle modules are found and built before launch, several deployed each at its own context.",
   "publisher": "Kalem",
   "icon": "icon.svg",

@@ -232,7 +232,7 @@ export async function buildStepOf(artifact, folder, fs, paths, platform) {
 		return {
 			title: `Build '${artifact.id}' (Maven package)`,
 			command: (await fs.exists(wrapper)) && rootIsProject ? wrapper : "mvn",
-			args: ["-q", "package", "-DskipTests", ...(inModule ? [] : ["-pl", artifact.module, "-am"])],
+			args: ["package", "-DskipTests", ...(inModule ? [] : ["-pl", artifact.module, "-am"])],
 			cwd: inModule ? paths.join(folder, ...artifact.module.split("/").filter(Boolean)) : folder,
 			shell: win,
 		};

@@ -481,3 +481,67 @@ test("a Tomcat configuration finds the artifacts of its working directory, Intel
 	]);
 	expect(errors).toEqual([]);
 });
+
+const hasMaven = (): boolean => {
+	try {
+		execFileSync("mvn", ["-v"], { stdio: "ignore" });
+		return true;
+	} catch {
+		return false;
+	}
+};
+
+test("Tomcat builds its Maven artifact before launch, with Maven's output shown as it goes", async () => {
+	test.skip(
+		TOMCAT === "" || !existsSync(join(TOMCAT, "bin", "catalina.sh")) || !hasMaven(),
+		"KALEM_TEST_TOMCAT is not set, or there is no mvn.",
+	);
+	test.setTimeout(240_000);
+	const folder = await tempDir("maven-war");
+	await mkdir(join(folder, "webapp", "src", "main", "webapp", "WEB-INF"), { recursive: true });
+	await writeFile(
+		join(folder, "pom.xml"),
+		"<project><modelVersion>4.0.0</modelVersion><groupId>acme</groupId><artifactId>quickres</artifactId><version>1.0</version><packaging>pom</packaging><modules><module>webapp</module></modules></project>",
+	);
+	await writeFile(
+		join(folder, "webapp", "pom.xml"),
+		"<project><modelVersion>4.0.0</modelVersion><parent><groupId>acme</groupId><artifactId>quickres</artifactId><version>1.0</version></parent><artifactId>quickres.webapp</artifactId><packaging>war</packaging><build><finalName>quickres</finalName></build></project>",
+	);
+	await writeFile(join(folder, "webapp", "src", "main", "webapp", "index.html"), "<h1>built</h1>");
+	await writeFile(
+		join(folder, "webapp", "src", "main", "webapp", "WEB-INF", "web.xml"),
+		"<web-app/>",
+	);
+	const port = await freePort();
+	await writeConfigs(folder, [
+		{
+			name: "Tomcat",
+			type: "tomcat",
+			tomcatHome: TOMCAT,
+			httpPort: port,
+			openBrowser: false,
+			buildArtifacts: true,
+			deployments: [
+				{
+					artifact: "webapp/target/quickres",
+					id: "quickres.webapp:war exploded",
+					kind: "exploded",
+					module: "webapp",
+					build: "maven",
+					context: "/quickres",
+				},
+			],
+		},
+	]);
+	const { app, page } = await launchWith(folder);
+	const pane = await installRunner(app, page);
+	await pane.getByRole("button", { name: "Run", exact: true }).click();
+	const output = pane.locator(".output");
+	await expect(output).toContainText("mvn package -DskipTests -pl webapp -am");
+	await expect(output).toContainText("Building quickres.webapp", { timeout: 120_000 });
+	await expect(output).toContainText("BUILD SUCCESS", { timeout: 120_000 });
+	await expect(output).toContainText("Server startup in", { timeout: 60_000 });
+	expect(await (await fetch(`http://localhost:${port}/quickres/`)).text()).toBe("<h1>built</h1>");
+	await pane.getByRole("button", { name: "Stop", exact: true }).click();
+	await expect(output).toContainText("Process finished with exit code");
+});

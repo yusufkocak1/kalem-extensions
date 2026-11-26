@@ -231,7 +231,11 @@ export async function activate(kalem) {
 		const env = { ...(spec.env ?? {}), ...parseEnv(config.env) };
 
 		for (const step of spec.steps ?? []) {
-			append(session, "system", `${step.title}\n`);
+			append(
+				session,
+				"system",
+				`${step.title}\n${[step.command, ...(step.args ?? [])].map(quote).join(" ")}\n\n`,
+			);
 			const code = await runProgram(session, { ...step, env }, step.cwd ?? cwd);
 			if (session.stopped) return finish(session, -1);
 			if (code !== 0) return finish(session, code);
