@@ -17,18 +17,32 @@ interface Request {
 	readonly body: unknown;
 }
 
+interface PivotRequest {
+	queries: {
+		filter?: unknown;
+		query: { query_string: string };
+		timerange: { type: string };
+		search_types: {
+			row_groups: { interval: { timeunit: string } }[];
+			column_groups: { fields: string[] }[];
+		}[];
+	}[];
+}
+
 const MESSAGES = [
 	{
 		timestamp: "2026-11-25T10:00:02.000Z",
 		source: "api-1",
 		level: 3,
 		message: "NullPointerException at OrderService.java:42",
+		http_status: 500,
 	},
 	{
 		timestamp: "2026-11-25T10:00:01.000Z",
 		source: "db-1",
 		level: 6,
 		message: "checkpoint complete",
+		http_status: 200,
 	},
 ];
 
@@ -88,6 +102,82 @@ async function fakeGraylog(legacy = false) {
 					),
 				});
 			}
+			if (!legacy && path === "/api/views/fields" && request.method === "POST") {
+				return send(
+					200,
+					["timestamp", "source", "level", "message", "http_status", "gl2_source_input"].map(
+						(name) => ({
+							name,
+							type: {
+								type:
+									name === "timestamp"
+										? "date"
+										: name === "level" || name === "http_status"
+											? "long"
+											: "string",
+								properties: [],
+								index_names: [],
+							},
+						}),
+					),
+				);
+			}
+			if (legacy && path === "/api/system/fields") {
+				return send(200, { fields: ["message", "source", "timestamp", "level", "http_status"] });
+			}
+			if (!legacy && path === "/api/views/search/sync") {
+				const spec = (JSON.parse(raw) as PivotRequest).queries[0].search_types[0];
+				const split = spec.column_groups[0]?.fields[0];
+				const minute = 60_000;
+				const now = Math.floor(Date.now() / minute) * minute;
+				const counts: [number, Record<string, number>][] = [
+					[now - 3 * minute, { "3": 1, "6": 2 }],
+					[now - 2 * minute, { "3": 4, "6": 1 }],
+					[now - minute, { "6": 2 }],
+				];
+				return send(200, {
+					execution: { done: true },
+					results: {
+						q: {
+							state: "COMPLETED",
+							search_types: {
+								trend: {
+									id: "trend",
+									type: "pivot",
+									total: 10,
+									rows: [
+										...counts.map(([time, byLevel]) => ({
+											key: [new Date(time).toISOString()],
+											source: "leaf",
+											values: [
+												...(split
+													? Object.entries(byLevel).map(([level, value]) => ({
+															key: [level, "count()"],
+															value,
+															rollup: false,
+															source: "col-leaf",
+														}))
+													: []),
+												{
+													key: ["count()"],
+													value: Object.values(byLevel).reduce((sum, each) => sum + each, 0),
+													rollup: true,
+													source: "row-leaf",
+												},
+											],
+										})),
+										{
+											key: [],
+											source: "non-leaf",
+											values: [{ key: ["count()"], value: 10, rollup: true, source: "row-inner" }],
+										},
+									],
+								},
+							},
+						},
+					},
+				});
+			}
 			if (!legacy && path === "/api/search/aggregate") {
 				return send(200, {
 					schema: [],
@@ -97,7 +187,10 @@ async function fakeGraylog(legacy = false) {
 					],
 				});
 			}
-			if (legacy && path === "/api/search/universal/relative") {
+			if (
+				legacy &&
+				(path === "/api/search/universal/relative" || path === "/api/search/universal/absolute")
+			) {
 				return send(200, { total_results: 2, messages: MESSAGES.map((message) => ({ message })) });
 			}
 			if (legacy && path === "/api/search/universal/relative/terms") {
@@ -191,6 +284,114 @@ test("the Graylog extension's pane searches Graylog with the token, docked as Ka
 	expect(errors).toEqual([]);
 });
 
+test("the Graylog pane shows any of Graylog's fields, a trend over time, top values and saved searches", async () => {
+	const graylog = await fakeGraylog();
+	cleanup.push(graylog.close);
+	const { app, page, errors } = await launch();
+	await page.setViewportSize({ width: 1400, height: 950 });
+	await installGraylog(page, app, graylog.url);
+	await page.locator('.stripe-bottom [data-pane="ext:kalem.graylog/search"]').click();
+	await page.evaluate(() => {
+		(document.querySelector(".tool-dock.dock-bottom") as HTMLElement).style.height = "640px";
+	});
+	const pane = page.frameLocator('iframe.ext-pane-frame[title="Graylog"]');
+	await pane.locator("#query").fill("level:3");
+	await pane.locator("#go").click();
+	await expect(pane.locator("tbody tr.row")).toHaveCount(2);
+
+	// The trend: a bar per minute, the total and the peak; the query and the interval went to the pivot.
+	const trend = pane.locator(".graylog-trend");
+	await expect(trend.locator(".graylog-trend-info")).toContainText("10 messages");
+	await expect(trend.locator(".graylog-trend-info")).toContainText("peak 5");
+	await expect(trend.locator('.graylog-bar[data-total="5"]')).toHaveCount(1);
+	const pivot = () =>
+		(
+			graylog.requests.filter((each) => each.path === "/api/views/search/sync").at(-1)
+				?.body as PivotRequest
+		).queries[0];
+	expect(pivot().query.query_string).toBe("level:3");
+	expect(pivot().search_types[0].row_groups[0].interval.timeunit).toBe("1m");
+	await trend.getByLabel("Split by").selectOption("level");
+	await expect(trend.locator(".graylog-legend")).toHaveText(/error.*info/);
+	expect(pivot().search_types[0].column_groups[0].fields).toEqual(["level"]);
+
+	// Every field of the stream, filtered; the one picked becomes a column.
+	await pane.getByRole("button", { name: "Fields" }).click();
+	const fields = pane.locator(".graylog-dialog");
+	await expect(fields.locator(".graylog-field-item")).toHaveCount(6);
+	await expect(fields.locator(".graylog-field-item").last()).toHaveAttribute(
+		"data-field",
+		"gl2_source_input",
+	);
+	await fields.getByLabel("Filter fields").fill("http");
+	await expect(fields.locator(".graylog-field-item:not(:has(input:checked))")).toHaveCount(1);
+	await fields.getByLabel("http_status").check();
+	await fields.getByRole("button", { name: "Show" }).click();
+	await expect(pane.locator("thead th")).toHaveText([
+		"timestamp",
+		"source",
+		"level",
+		"message",
+		"http_status",
+	]);
+	const lastSearch = graylog.requests.filter((each) => each.path === "/api/search/messages").at(-1);
+	expect((lastSearch?.body as { fields: string[] }).fields).toEqual([
+		"timestamp",
+		"source",
+		"level",
+		"message",
+		"http_status",
+	]);
+
+	// A field's menu: its top values, and one of them added to the query.
+	await pane.locator("thead").getByRole("button", { name: "source", exact: true }).click();
+	await pane.getByRole("menuitem", { name: "Show top values" }).click();
+	const top = pane.locator(".graylog-dialog");
+	await expect(top.locator(".graylog-top-row")).toHaveCount(2);
+	await expect(top.locator('.graylog-top-row[data-value="api-1"]')).toContainText("5 · 71%");
+	await top
+		.locator('.graylog-top-row[data-value="api-1"]')
+		.getByRole("button", { name: "Add to query" })
+		.click();
+	await expect(pane.locator("#query")).toHaveValue("(level:3) AND source:api-1");
+
+	// A value's menu: left out of the results.
+	await pane.locator("tbody tr.row").first().click();
+	await pane.locator("tr.detail").getByRole("button", { name: "500", exact: true }).click();
+	await pane.getByRole("menuitem", { name: "Exclude from results" }).click();
+	await expect(pane.locator("#query")).toHaveValue(
+		"((level:3) AND source:api-1) AND NOT http_status:500",
+	);
+
+	// Saved: one click away, with its fields.
+	await pane.getByRole("button", { name: "Save this search" }).click();
+	const save = pane.locator(".graylog-dialog");
+	await save.getByLabel("Name").fill("API errors");
+	await save.getByRole("button", { name: "Save", exact: true }).click();
+	await pane.locator("#query").fill("*");
+	await pane.locator("#go").click();
+	await pane
+		.locator('.graylog-chip[data-saved="API errors"]')
+		.getByRole("button", { name: "API errors", exact: true })
+		.click();
+	await expect(pane.locator("#query")).toHaveValue(
+		"((level:3) AND source:api-1) AND NOT http_status:500",
+	);
+
+	// Dragging over the chart zooms into that time.
+	const plot = trend.locator(".graylog-plot");
+	const box = (await plot.boundingBox()) as { x: number; y: number; width: number; height: number };
+	await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2);
+	await page.mouse.down();
+	await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2, { steps: 5 });
+	await page.mouse.up();
+	await expect(pane.locator("#range")).toHaveValue("zoom");
+	await expect.poll(() => pivot().timerange.type).toBe("absolute");
+	await trend.getByRole("button", { name: /Back to/ }).click();
+	await expect(pane.locator("#range")).toHaveValue("15");
+	expect(errors).toEqual([]);
+});
+
 test("the assistant searches Graylog through the extension's tools, also on a Graylog without the scripting API", async () => {
 	test.skip(process.platform === "win32", "The stand-in CLI is a Unix script.");
 	const graylog = await fakeGraylog(true);
@@ -200,6 +401,16 @@ test("the assistant searches Graylog through the extension's tools, also on a Gr
 		{ name: "graylog_streams", input: {} },
 		{ name: "graylog_top_values", input: { field: "source", query: "level:3", minutes: 60 } },
 		{ name: "graylog_search", input: { query: "level:3", minutes: 60, limit: 20 } },
+		{ name: "graylog_fields", input: {} },
+		{
+			name: "graylog_trend",
+			input: {
+				query: "*",
+				from: "2026-11-25T09:59:00Z",
+				to: "2026-11-25T10:01:00Z",
+				splitBy: "level",
+			},
+		},
 	]);
 	const { app, page } = await launch({
 		settings: { assistant: true },
@@ -216,7 +427,16 @@ test("the assistant searches Graylog through the extension's tools, also on a Gr
 	).toContainText("İki hata buldum.");
 
 	const [call] = await claude.calls();
-	const [streams, top, search] = call?.tools ?? [];
+	const [streams, top, search, fields, trend] = call?.tools ?? [];
+	expect(fields?.text).toBe("http_status\nlevel\nmessage\nsource\ntimestamp");
+	expect(trend?.text).toBe(
+		[
+			"2 message(s) from 2026-11-25T09:59Z to 2026-11-25T10:01Z, in bars of 1 minute(s).",
+			"Peak: 2 at 2026-11-25T10:00Z.",
+			"Split by level: 3, 6",
+			"2026-11-25T10:00Z 2 (3=1, 6=1)",
+		].join("\n"),
+	);
 	expect(streams?.text).toBe(
 		"Graylog 4.2.13\ns-api: API\n000000000000000000000001: Default Stream",
 	);

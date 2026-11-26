@@ -1,8 +1,8 @@
 {
   "id": "kalem.graylog",
   "name": "Graylog",
-  "version": "1.0.0",
-  "description": "Searches Graylog (5, 6 and 7) with an access token: a panel to search and read logs, and tools that let the assistant search them.",
+  "version": "1.1.0",
+  "description": "Searches Graylog (5, 6 and 7) with an access token: a panel to search and read logs with any of Graylog's fields as columns, a trend chart of messages over time (split by level, source or any field; drag to zoom), saved searches one click away, and tools that let the assistant search, count and follow trends.",
   "publisher": "Kalem",
   "icon": "icon.svg",
   "engines": {
@@ -38,9 +38,9 @@
       {
         "key": "fields",
         "type": "string",
-        "title": "Fields",
+        "title": "Default fields",
         "default": "timestamp, source, level, message",
-        "description": "The fields shown and given to the assistant, comma separated."
+        "description": "The columns shown until you pick others in the pane (Fields), comma separated."
       },
       {
         "key": "limit",
