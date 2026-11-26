@@ -281,3 +281,97 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+.soap-load .k-button.icon {
+	min-width: 0;
+}
+
+.soap-dialog {
+	width: min(760px, calc(100vw - 40px));
+	height: min(560px, calc(100vh - 40px));
+	padding: 0;
+	overflow: hidden;
+	border: 1px solid var(--k-line);
+	border-radius: 14px;
+	background: var(--k-panel);
+	color: var(--k-text);
+	box-shadow: var(--app-shadow, 0 20px 50px rgb(0 0 0 / 25%));
+}
+
+.soap-dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.soap-dialog::backdrop {
+	background: rgb(0 0 0 / 30%);
+}
+
+.soap-dialog-head {
+	display: grid;
+	gap: 2px;
+	padding: 16px 18px 12px;
+	border-bottom: 1px solid var(--k-soft-line);
+}
+
+.soap-dialog-foot {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	padding: 12px 16px;
+	border-top: 1px solid var(--k-soft-line);
+}
+
+.soap-import-body {
+	display: grid;
+	flex: 1;
+	grid-template-rows: minmax(120px, 1fr) auto minmax(80px, 0.8fr) auto;
+	gap: 10px;
+	min-height: 0;
+	padding: 14px 16px;
+}
+
+.soap-import-input {
+	height: 100%;
+	min-height: 0;
+	resize: none;
+	font-size: 12px;
+}
+
+.soap-import-options {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+}
+
+.soap-import-check {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: var(--k-muted);
+	font-size: 12px;
+}
+
+.soap-import-preview {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-height: 0;
+}
+
+.soap-import-found {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.soap-import-list .k-list-item {
+	cursor: default;
+	font-size: 12.5px;
+}
+
+.soap-import-meta {
+	margin-left: auto;
+	white-space: nowrap;
+}

@@ -174,3 +174,104 @@ export function statusKind(status) {
 	if (status >= 400 && status < 500) return "warn";
 	return "error";
 }
+
+const formRows = (body) =>
+	body
+		.split("&")
+		.filter((part) => part !== "")
+		.map((part) => {
+			const equals = part.indexOf("=");
+			const decode = (text) => {
+				try {
+					return decodeURIComponent(text.replace(/\+/g, " "));
+				} catch {
+					return text;
+				}
+			};
+			return equals === -1
+				? { key: decode(part), value: "", on: true }
+				: { key: decode(part.slice(0, equals)), value: decode(part.slice(equals + 1)), on: true };
+		});
+
+function decodeBasic(value) {
+	try {
+		const bytes = Uint8Array.from(atob(value.trim()), (c) => c.charCodeAt(0));
+		const text = new TextDecoder().decode(bytes);
+		const colon = text.indexOf(":");
+		return colon === -1
+			? null
+			: { username: text.slice(0, colon), password: text.slice(colon + 1) };
+	} catch {
+		return null;
+	}
+}
+
+/** An imported request (see import.js) as the client keeps it. */
+export function fromImported(
+	found,
+	{ browserHeaders = false, isBrowserHeader = () => false } = {},
+) {
+	let headers = found.headers
+		.filter((row) => browserHeaders || !isBrowserHeader(row.key))
+		.map((row) => ({ key: row.key, value: row.value, on: true }));
+	// kalem-locale-ok: header names are ASCII
+	const named = (name) => headers.find((row) => row.key.toLowerCase() === name);
+	const without = (row) => {
+		headers = headers.filter((each) => each !== row);
+	};
+	let auth = found.auth ?? { type: "none" };
+	const authorization = named("authorization");
+	if (auth.type === "none" && authorization) {
+		const [scheme, ...rest] = authorization.value.split(" ");
+		const credential = rest.join(" ").trim();
+		if (/^bearer$/i.test(scheme) && credential !== "") {
+			auth = { type: "bearer", token: credential };
+			without(authorization);
+		} else if (/^basic$/i.test(scheme)) {
+			const decoded = decodeBasic(credential);
+			if (decoded !== null) {
+				auth = { type: "basic", ...decoded };
+				without(authorization);
+			}
+		}
+	}
+	const typeRow = named("content-type");
+	const type = typeRow?.value.toLowerCase() ?? "";
+	let body = { mode: "none", text: "", form: [] };
+	if (found.form.length > 0) {
+		body = { mode: "form", text: "", form: found.form.map((row) => ({ ...row, on: true })) };
+		if (typeRow) without(typeRow);
+	} else if (found.body !== null) {
+		const language = found.language;
+		const mode =
+			language === "json" || /[/+]json\b/.test(type)
+				? "json"
+				: language === "xml" || /[/+]xml\b/.test(type)
+					? "xml"
+					: type.includes("x-www-form-urlencoded")
+						? "form"
+						: language === null && type === "" && /^\s*[[{]/.test(found.body)
+							? "json"
+							: "text";
+		if (mode === "form") {
+			body = { mode, text: "", form: formRows(found.body) };
+		} else if (mode === "json") {
+			let text = found.body;
+			try {
+				text = JSON.stringify(JSON.parse(found.body), null, 2);
+			} catch {
+				// Not valid JSON as it is: kept unchanged.
+			}
+			body = { mode, text, form: [] };
+		} else body = { mode, text: found.body, form: [] };
+		if (typeRow && type.replace(/\s/g, "") === CONTENT_TYPES[mode]) without(typeRow);
+	}
+	return newRequest({
+		name: found.name,
+		method: found.method,
+		url: found.url,
+		headers,
+		body,
+		auth,
+	});
+}

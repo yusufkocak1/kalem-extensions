@@ -57,6 +57,28 @@ export async function activate(kalem) {
 		await kalem.storage.set("collection", collection);
 		return state();
 	});
+	await kalem.ui.handle("import", async (input) => {
+		const collection = (await read("collection", [])).map(normalize);
+		collection.push(...(Array.isArray(input?.requests) ? input.requests : []).map(normalize));
+		await kalem.storage.set("collection", collection);
+		const vars = Array.isArray(input?.environment?.vars) ? input.environment.vars : [];
+		if (vars.length > 0) {
+			const environments = await read("environments", []);
+			const name = String(input.environment.name || "Imported");
+			const existing = environments.find((each) => each.name === name);
+			if (existing) {
+				for (const row of vars)
+					if (!existing.vars.some((each) => each.key === row.key)) existing.vars.push(row);
+			} else environments.push({ id: `${Date.now().toString(36)}e`, name, vars });
+			await kalem.storage.set("environments", environments);
+			if ((await read("environment", null)) === null)
+				await kalem.storage.set(
+					"environment",
+					environments.find((each) => each.name === name)?.id ?? null,
+				);
+		}
+		return state();
+	});
 	await kalem.ui.handle("delete", async (id) => {
 		await kalem.storage.set(
 			"collection",

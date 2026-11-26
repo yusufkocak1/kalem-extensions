@@ -151,6 +151,7 @@ const PATHS = {
 	list: "M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1",
 	alert: "M12 3l10 18H2zM12 10v5M12 18h.01",
 	upload: "M12 16V4M6 10l6-6 6 6M4 20h16",
+	download: "M12 4v12M6 10l6 6 6-6M4 20h16",
 	file: "M6 3h8l4 4v14H6zM14 3v4h4",
 };
 

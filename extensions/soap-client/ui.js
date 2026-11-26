@@ -1,5 +1,6 @@
 import { el, formatSize, highlightXml, icon, prettyXml, renderBody } from "./highlight.js";
 import { translator } from "./i18n.js";
+import { parseSoapImport } from "./import.js";
 
 const kalem = window.kalem;
 const t = translator(kalem.language);
@@ -18,7 +19,27 @@ let extraHeaders = [];
 const auth = { username: "", password: "" };
 let filter = "";
 
-const keyOf = (selection) => `${wsdl?.url}#${selection.port.name}#${selection.operation.name}`;
+const IMPORTED = "kalem:imported";
+const keyOf = (selection) =>
+	`${wsdl?.url}#${selection.port.name}#${selection.operation.id ?? selection.operation.name}`;
+const nameOf = (item) => (item.url === IMPORTED ? t("Imported requests") : item.name);
+const serviceName = (service) => (wsdl?.url === IMPORTED ? t("Imported") : service.name);
+
+/** Picks an operation; an imported one brings its own headers and Basic auth. */
+function select(selection) {
+	chosen = selection;
+	response = null;
+	const { operation } = selection;
+	if (operation.id !== undefined) {
+		extraHeaders = Object.entries(operation.headers ?? {}).map(([key, value]) => ({
+			key,
+			value,
+			on: true,
+		}));
+		auth.username = operation.username ?? "";
+		auth.password = operation.password ?? "";
+	}
+}
 const statusKind = (status) =>
 	status < 300 ? "ok" : status < 400 ? "info" : status < 500 ? "warn" : "error";
 
@@ -59,14 +80,8 @@ async function load(url, force = false) {
 	loadButton.disabled = true;
 	loadButton.replaceChildren(el("span", { class: "k-spinner" }));
 	try {
-		wsdl = await kalem.call("load", { url, force });
-		wsdlInput.value = wsdl.url;
+		show(await kalem.call("load", { url, force }));
 		recent = await kalem.call("recent");
-		const first = wsdl.services[0]?.ports[0];
-		chosen = first?.operations[0]
-			? { service: wsdl.services[0], port: first, operation: first.operations[0] }
-			: null;
-		response = null;
 		draw();
 	} catch (error) {
 		sideNotice.replaceChildren(
@@ -77,6 +92,18 @@ async function load(url, force = false) {
 		loadButton.disabled = false;
 		loadButton.replaceChildren(document.createTextNode(t("Load")));
 	}
+}
+
+function show(next, pick = null) {
+	wsdl = next;
+	wsdlInput.value = wsdl.url === IMPORTED || wsdl.url.startsWith("text:") ? "" : wsdl.url;
+	chosen = null;
+	response = null;
+	for (const service of wsdl.services)
+		for (const port of service.ports)
+			for (const operation of port.operations)
+				if (chosen === null && (pick === null || pick(operation)))
+					select({ service, port, operation });
 }
 
 function drawTree() {
@@ -103,8 +130,14 @@ function drawTree() {
 									"li",
 									{ class: "k-list-item", title: item.url, onclick: () => void load(item.url) },
 									[
-										icon("history"),
-										el("span", { class: "k-name", text: item.name }),
+										icon(
+											item.url === IMPORTED
+												? "download"
+												: item.url.startsWith("text:")
+													? "file"
+													: "history",
+										),
+										el("span", { class: "k-name", text: nameOf(item) }),
 										el("span", { class: "k-actions" }, [
 											el(
 												"button",
@@ -139,7 +172,7 @@ function drawTree() {
 			groups.push(
 				el("section", { class: "soap-port" }, [
 					el("header", { class: "soap-port-head", title: port.endpoint }, [
-						el("span", { class: "soap-port-name", text: `${service.name} › ${port.name}` }),
+						el("span", { class: "soap-port-name", text: `${serviceName(service)} › ${port.name}` }),
 						el("span", {
 							class: `k-badge ${port.version === "1.2" ? "info" : ""}`,
 							text: `SOAP ${port.version}`,
@@ -157,14 +190,40 @@ function drawTree() {
 									"data-operation": operation.name,
 									title: operation.documentation || operation.action,
 									onclick: () => {
-										chosen = { service, port, operation };
-										response = null;
+										select({ service, port, operation });
 										draw();
 									},
 								},
 								[
 									el("span", { class: "soap-op-icon", text: "ƒ" }),
 									el("span", { class: "k-name", text: operation.name }),
+									...(operation.id === undefined
+										? []
+										: [
+												el("span", { class: "k-actions" }, [
+													el(
+														"button",
+														{
+															class: "k-button ghost icon small",
+															title: t("Delete"),
+															"aria-label": t("Delete"),
+															onclick: async (event) => {
+																event.stopPropagation();
+																const keptId = chosen?.operation.id;
+																show(
+																	await kalem.call("forgetImported", operation.id),
+																	(each) => each.id === keptId,
+																);
+																if (wsdl.services.length === 0) wsdl = null;
+																else if (chosen === null) show(wsdl);
+																recent = await kalem.call("recent");
+																draw();
+															},
+														},
+														[icon("trash")],
+													),
+												]),
+											]),
 								],
 							),
 						),
@@ -175,7 +234,7 @@ function drawTree() {
 	}
 	tree.replaceChildren(
 		el("div", { class: "soap-wsdl-head" }, [
-			el("strong", { text: wsdl.name }),
+			el("strong", { text: nameOf(wsdl) }),
 			el("span", {
 				class: "k-muted k-small",
 				text: `${wsdl.services.reduce((n, service) => n + service.ports.reduce((m, port) => m + port.operations.length, 0), 0)} ${t("operations")}`,
@@ -578,6 +637,251 @@ async function send() {
 	}
 }
 
+// --- Import ---------------------------------------------------------------------------
+
+const FORMATS = {
+	curl: "cURL",
+	fetch: "fetch",
+	powershell: "PowerShell",
+	http: "HTTP",
+	har: "HAR",
+	wsdl: "WSDL",
+	envelope: "SOAP envelope",
+};
+
+const importButton = el(
+	"button",
+	{
+		class: "k-button icon",
+		title: t("Import"),
+		"aria-label": t("Import"),
+		onclick: () => openImport(),
+	},
+	[icon("download")],
+);
+const dialog = el("dialog", { class: "soap-dialog" });
+
+/** Finds the loaded WSDL's operation an imported call is for: by SOAPAction, else by name. */
+function matchingOperation(call) {
+	if (wsdl === null || wsdl.url === IMPORTED) return null;
+	const all = wsdl.services.flatMap((service) =>
+		service.ports.flatMap((port) =>
+			port.operations.map((operation) => ({ service, port, operation })),
+		),
+	);
+	const sameVersion = (each) => each.port.version === call.version;
+	const byAction = all.filter(
+		(each) => call.action !== "" && each.operation.action === call.action,
+	);
+	const byName = all.filter((each) => each.operation.name === call.name);
+	return byAction.find(sameVersion) ?? byAction[0] ?? byName.find(sameVersion) ?? byName[0] ?? null;
+}
+
+async function useCalls(calls) {
+	const match = calls.length === 1 ? matchingOperation(calls[0]) : null;
+	if (match !== null) {
+		const [call] = calls;
+		select(match);
+		const formatted = prettyXml(call.envelope) ?? call.envelope;
+		envelopes[keyOf(match)] = formatted;
+		void kalem.call("keepEnvelope", { key: keyOf(match), text: formatted });
+		extraHeaders = Object.entries(call.headers).map(([key, value]) => ({ key, value, on: true }));
+		auth.username = call.username;
+		auth.password = call.password;
+		draw();
+		if (call.endpoint !== "") endpointInput.value = call.endpoint;
+		return;
+	}
+	const tidy = calls.map((call) => ({
+		...call,
+		envelope: prettyXml(call.envelope) ?? call.envelope,
+	}));
+	const { workspace, ids } = await kalem.call("importCalls", { calls: tidy });
+	show(workspace, (operation) => operation.id === ids[0]);
+	recent = await kalem.call("recent");
+	draw();
+}
+
+function openImport() {
+	let browserHeaders = false;
+	const input = el("textarea", {
+		class: "k-textarea k-mono soap-import-input",
+		spellcheck: "false",
+		"aria-label": t("Text to import"),
+		placeholder: `curl 'https://…/Service' -H 'SOAPAction: "…"' --data-raw '<soapenv:Envelope …>'`,
+	});
+	const preview = el("div", { class: "soap-import-preview k-scroll" });
+	const openButton = el("button", { class: "k-button primary" });
+	const fileInput = el("input", {
+		type: "file",
+		hidden: true,
+		accept: ".wsdl,.xml,.har,.json,.txt,.sh",
+		"aria-label": t("Choose a file"),
+	});
+	let fileName = "";
+	const readFile = async (file) => {
+		fileName = file.name.replace(/\.(wsdl|xml)$/i, "");
+		input.value = await file.text();
+		update();
+	};
+	fileInput.addEventListener("change", () => {
+		if (fileInput.files?.[0]) void readFile(fileInput.files[0]);
+	});
+	input.addEventListener("dragover", (event) => event.preventDefault());
+	input.addEventListener("drop", (event) => {
+		const file = event.dataTransfer?.files?.[0];
+		if (!file) return;
+		event.preventDefault();
+		void readFile(file);
+	});
+	const keepBox = el("input", { type: "checkbox" });
+	keepBox.addEventListener("change", () => {
+		browserHeaders = keepBox.checked;
+		update();
+	});
+	const failure = el("div", { class: "k-notice error", hidden: true });
+
+	let found = { format: null, calls: [] };
+	function update() {
+		found = parseSoapImport(input.value, { browserHeaders });
+		failure.hidden = true;
+		const count = found.calls.length;
+		openButton.hidden = found.format !== "wsdl" && count === 0;
+		const match = count === 1 ? matchingOperation(found.calls[0]) : null;
+		openButton.replaceChildren(
+			document.createTextNode(
+				found.format === "wsdl"
+					? t("Open the WSDL")
+					: match !== null
+						? t("Open in {name}").replace("{name}", match.operation.name)
+						: count > 1
+							? t("Add {n} requests").replace("{n}", String(count))
+							: t("Open"),
+			),
+		);
+		if (input.value.trim() === "") {
+			preview.replaceChildren(
+				el("p", {
+					class: "k-muted k-small",
+					text: t(
+						"In the browser's DevTools, Network tab: right-click the call › Copy › Copy as cURL, then paste it here. A WSDL's text or a bare envelope works too.",
+					),
+				}),
+			);
+			return;
+		}
+		if (found.format === "wsdl") {
+			preview.replaceChildren(
+				el("div", { class: "soap-import-found" }, [
+					el("span", { class: "k-badge ok", text: "WSDL" }),
+					el("span", {
+						class: "k-muted k-small",
+						text: t("Its services and operations open as if loaded from an address."),
+					}),
+				]),
+			);
+			return;
+		}
+		if (count === 0) {
+			preview.replaceChildren(
+				el("div", { class: "k-notice warn" }, [
+					icon("alert"),
+					el("span", {
+						text:
+							found.error === "none-soap"
+								? t("No SOAP call here: the requests found carry no SOAP envelope.")
+								: (found.error ?? t("This is not a SOAP call or a WSDL Kalem can read.")),
+					}),
+				]),
+			);
+			return;
+		}
+		preview.replaceChildren(
+			el("div", { class: "soap-import-found" }, [
+				el("span", { class: "k-badge ok", text: FORMATS[found.format] ?? found.format }),
+				el("span", {
+					class: "k-muted k-small",
+					text:
+						match !== null
+							? t("Opens in the loaded WSDL's {name} operation.").replace(
+									"{name}",
+									match.operation.name,
+								)
+							: t("Kept under Imported requests."),
+				}),
+			]),
+			el(
+				"ul",
+				{ class: "k-list soap-import-list" },
+				found.calls.map((call) =>
+					el("li", { class: "k-list-item", title: call.endpoint }, [
+						el("span", { class: "soap-op-icon", text: "ƒ" }),
+						el("span", { class: "k-name", text: call.name }),
+						el("span", {
+							class: "k-muted k-small soap-import-meta",
+							text: [`SOAP ${call.version}`, call.endpoint || t("no endpoint")].join(" · "),
+						}),
+					]),
+				),
+			),
+		);
+	}
+	input.addEventListener("input", update);
+	openButton.addEventListener("click", async () => {
+		openButton.disabled = true;
+		try {
+			if (found.format === "wsdl") {
+				show(await kalem.call("loadText", { text: found.wsdl, name: fileName }));
+				recent = await kalem.call("recent");
+				draw();
+			} else await useCalls(found.calls);
+			dialog.close();
+		} catch (error) {
+			failure.replaceChildren(icon("alert"), el("span", { text: error.message }));
+			failure.hidden = false;
+		} finally {
+			openButton.disabled = false;
+		}
+	});
+
+	dialog.replaceChildren(
+		el("header", { class: "soap-dialog-head" }, [
+			el("strong", { text: t("Import") }),
+			el("span", {
+				class: "k-muted k-small",
+				text: t(
+					"cURL (bash or cmd), fetch, PowerShell, a raw HTTP request, HAR, a WSDL or an envelope.",
+				),
+			}),
+		]),
+		el("div", { class: "soap-import-body" }, [
+			input,
+			el("div", { class: "soap-import-options" }, [
+				el("button", { class: "k-button small", onclick: () => fileInput.click() }, [
+					icon("file"),
+					document.createTextNode(t("Choose file…")),
+				]),
+				fileInput,
+				el("label", { class: "soap-import-check" }, [
+					keepBox,
+					el("span", { text: t("Keep the browser's own headers (sec-*, user-agent…)") }),
+				]),
+			]),
+			preview,
+			failure,
+		]),
+		el("footer", { class: "soap-dialog-foot" }, [
+			el("button", { class: "k-button ghost", onclick: () => dialog.close() }, [
+				document.createTextNode(t("Cancel")),
+			]),
+			openButton,
+		]),
+	);
+	update();
+	if (!dialog.open) dialog.showModal();
+	input.focus();
+}
+
 // --- The page --------------------------------------------------------------------------
 
 const main = el("main", { class: "soap-main" });
@@ -616,7 +920,10 @@ function draw() {
 	main.replaceChildren(workspace);
 	title.replaceChildren(
 		el("strong", { class: "soap-op-name", text: chosen.operation.name }),
-		el("span", { class: "k-muted k-small", text: `${chosen.service.name} › ${chosen.port.name}` }),
+		el("span", {
+			class: "k-muted k-small",
+			text: `${serviceName(chosen.service)} › ${chosen.port.name}`,
+		}),
 	);
 	versionSelect.value = chosen.port.version;
 	endpointInput.value = chosen.port.endpoint;
@@ -632,12 +939,13 @@ function draw() {
 app.append(
 	el("div", { class: "soap-layout" }, [
 		el("aside", { class: "k-sidebar soap-side" }, [
-			el("div", { class: "soap-load" }, [wsdlInput, loadButton]),
+			el("div", { class: "soap-load" }, [wsdlInput, loadButton, importButton]),
 			sideNotice,
 			el("div", { class: "k-scroll k-grow" }, [tree]),
 		]),
 		main,
 	]),
+	dialog,
 );
 
 [recent, envelopes] = await Promise.all([kalem.call("recent"), kalem.call("envelopes")]);
