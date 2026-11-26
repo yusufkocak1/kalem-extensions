@@ -1,0 +1,62 @@
+# Every folder of extensions/ is an extension. A push to main packs the new
+# versions, signs index.json and publishes it on GitHub Pages (gh-pages),
+# keeping the versions published before.
+name: Publish catalog
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-catalog
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the signing key
+        env:
+          KALEM_REGISTRY_KEY: ${{ secrets.KALEM_REGISTRY_KEY }}
+        run: |
+          if [ -z "$KALEM_REGISTRY_KEY" ]; then
+            echo "::error::Add the repository secret KALEM_REGISTRY_KEY (the contents of keys/private.pem). See README."
+            exit 1
+          fi
+
+      - name: The catalog as published so far
+        run: |
+          git fetch origin gh-pages || true
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git worktree add site origin/gh-pages
+          else
+            mkdir site
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build and sign
+        env:
+          KALEM_REGISTRY_KEY: ${{ secrets.KALEM_REGISTRY_KEY }}
+        run: |
+          npm install --prefix tools --no-audit --no-fund
+          node tools/extension-registry.mjs build extensions site \
+            --name "${{ vars.CATALOG_NAME || 'Kalem Eklentileri' }}" \
+            --blocked blocked.json
+
+      - name: Publish
+        run: |
+          cd site
+          touch .nojekyll
+          [ -e .git ] || git init -q
+          git add -A
+          git -c user.name=catalog-bot -c user.email=catalog-bot@users.noreply.github.com commit -qm "Publish catalog" || exit 0
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:gh-pages
