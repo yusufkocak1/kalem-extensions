@@ -1,0 +1,113 @@
+{
+	"version": 1,
+	"name": "Kalem Eklentileri",
+	"updated": "2026-11-26T04:30:34.825Z",
+	"extensions": [
+		{
+			"id": "kalem.graylog",
+			"name": "Graylog",
+			"version": "1.0.0",
+			"description": "Searches Graylog (5, 6 and 7) with an access token: a panel to search and read logs, and tools that let the assistant search them.",
+			"publisher": "Kalem",
+			"engine": ">=3.34.0",
+			"permissions": {
+				"httpFromSettings": [
+					"url"
+				],
+				"assistantTools": true
+			},
+			"url": "kalem.graylog-1.0.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPkdyYXlsb2c8L3RpdGxlPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2ZmNmI0YSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2Q5MzYzZSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSJ1cmwoI2cpIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PHBhdGggZD0iTTE2IDIyaDMyIi8+PHBhdGggZD0iTTE2IDMyaDIyIi8+PHBhdGggZD0iTTE2IDQyaDI4Ii8+PC9nPjxjaXJjbGUgY3g9IjQ2IiBjeT0iMzIiIHI9IjMuNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPgo=",
+			"sha256": "c30fbdb640186898ae32b8c5826092fa9b43a1323681290b07357dfe87d0c434",
+			"size": 12235
+		},
+		{
+			"id": "kalem.jenkins",
+			"name": "Jenkins",
+			"version": "1.0.0",
+			"description": "Jenkins in Kalem, with QuickPipeline inside: parameterized pipelines read from Jenkins, a tree of environments whose variables targets inherit, quick actions (Start, Stop, Restart…) run on one target or a whole group after a preview, and the builds followed to their result. Browse jobs and builds, read consoles and stages, and let the assistant find why a build failed. Imports QuickPipeline's config.json.",
+			"publisher": "Kalem",
+			"engine": ">=3.37.0",
+			"permissions": {
+				"httpFromSettings": [
+					"url"
+				],
+				"assistantTools": true
+			},
+			"url": "kalem.jenkins-1.0.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPkplbmtpbnM8L3RpdGxlPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2QzMzgzMyIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzljMWYxYiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgcng9IjE0IiBmaWxsPSJ1cmwoI2cpIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMuNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxOCIgY3k9IjMyIiByPSI1Ii8+PGNpcmNsZSBjeD0iNDYiIGN5PSIyMCIgcj0iNSIvPjxjaXJjbGUgY3g9IjQ2IiBjeT0iNDQiIHI9IjUiLz48cGF0aCBkPSJNMjMgMzBsMTgtOE0yMyAzNGwxOCA4Ii8+PC9nPjwvc3ZnPgo=",
+			"sha256": "761e7b484059052d305617e8fb6a568a18a0d921606915a970d8f9c627a1b911",
+			"size": 36780
+		},
+		{
+			"id": "kalem.log-viewer",
+			"name": "Log Viewer",
+			"version": "1.0.0",
+			"description": "Follow log files as they grow: several files in tabs, levels coloured and counted, stack traces kept with their line, search and filter by text or pattern, earlier parts loaded on demand. Rotated files are noticed. The assistant can read a log's last lines and search it.",
+			"publisher": "Kalem",
+			"engine": ">=3.37.0",
+			"permissions": {
+				"files": true,
+				"assistantTools": true
+			},
+			"url": "kalem.log-viewer-1.0.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InQiPjx0aXRsZSBpZD0idCI+TG9nIFZpZXdlcjwvdGl0bGU+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMmY2ZjhmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTczODRkIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9InVybCgjZykiLz48cmVjdCB4PSIxNCIgeT0iMTYiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHJ4PSIxLjUiIGZpbGw9IiM3ZmQ2YTQiLz48cmVjdCB4PSIyMyIgeT0iMTciIHdpZHRoPSIyNyIgaGVpZ2h0PSIzIiByeD0iMS41IiBmaWxsPSIjZTZmMWY2Ii8+PHJlY3QgeD0iMTQiIHk9IjI2IiB3aWR0aD0iNSIgaGVpZ2h0PSI1IiByeD0iMS41IiBmaWxsPSIjZjRjMzVlIi8+PHJlY3QgeD0iMjMiIHk9IjI3IiB3aWR0aD0iMjAiIGhlaWdodD0iMyIgcng9IjEuNSIgZmlsbD0iI2U2ZjFmNiIvPjxyZWN0IHg9IjE0IiB5PSIzNiIgd2lkdGg9IjUiIGhlaWdodD0iNSIgcng9IjEuNSIgZmlsbD0iI2YyNzk2YiIvPjxyZWN0IHg9IjIzIiB5PSIzNyIgd2lkdGg9IjI0IiBoZWlnaHQ9IjMiIHJ4PSIxLjUiIGZpbGw9IiNlNmYxZjYiLz48cmVjdCB4PSIyMyIgeT0iNDQiIHdpZHRoPSIxNiIgaGVpZ2h0PSIyLjUiIHJ4PSIxLjI1IiBmaWxsPSIjOWZiZmQwIi8+PGNpcmNsZSBjeD0iNDYiIGN5PSI0NiIgcj0iNyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiLz48cGF0aCBkPSJNNTEgNTFsNSA1IiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PC9zdmc+Cg==",
+			"sha256": "cf1405748f8dfb1ec8c80783b506d467dc7f011a946b3bfa730efc5b019ed994",
+			"size": 15680
+		},
+		{
+			"id": "kalem.rest-client",
+			"name": "REST Client",
+			"version": "1.0.0",
+			"description": "Sends HTTP requests as Postman does: a saved collection, environments with {{variables}}, parameters, headers, JSON, XML and form bodies, Bearer, Basic and API key auth, and the response pretty and coloured. The assistant can send requests too, when you allow each one.",
+			"publisher": "Kalem",
+			"engine": ">=3.36.0",
+			"permissions": {
+				"http": [
+					"*"
+				],
+				"assistantTools": true
+			},
+			"url": "kalem.rest-client-1.0.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlJFU1QgQ2xpZW50PC90aXRsZT48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNmZjhhM2QiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNlMjUzMWMiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0idXJsKCNnKSIvPjxwYXRoIGQ9Ik0xNCAzNGwzNC0xNS05IDI3LTYtMTEtMTktMXoiIGZpbGw9IiNmZmYiLz48cGF0aCBkPSJNMzMgMzVsMTUtMTYiIHN0cm9rZT0iI2UyNTMxYyIgc3Ryb2tlLXdpZHRoPSIyLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPgo=",
+			"sha256": "6851c281cd46e58759434ff387d7a08d4b5db8fab14b499c71ee62f8edcdf7f5",
+			"size": 17170
+		},
+		{
+			"id": "kalem.run-configurations",
+			"name": "Run Configurations",
+			"version": "1.0.0",
+			"description": "Runs your applications as an IDE does: Tomcat, Java applications and JARs, Maven, Gradle, npm scripts (Vue, React, Angular…) and any command, with their output in a Run panel. The configurations are kept in the folder (.kalem/run.json), to share with the team.",
+			"publisher": "Kalem",
+			"engine": ">=3.35.0",
+			"permissions": {
+				"process": true,
+				"files": true,
+				"assistantTools": true
+			},
+			"url": "kalem.run-configurations-1.0.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlJ1biBDb25maWd1cmF0aW9uczwvdGl0bGU+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMzRjMzhmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTI3YTViIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNMjUgMTkuNXYyNWEyIDIgMCAwIDAgMy4wNSAxLjdsMjAtMTIuNWEyIDIgMCAwIDAgMC0zLjRsLTIwLTEyLjVBMiAyIDAgMCAwIDI1IDE5LjV6IiBmaWxsPSIjZmZmIi8+PC9zdmc+Cg==",
+			"sha256": "0434943cebea52f0f7091464e3b6feeffbbcd5f8a0300f7d8e7729f2c98b1954",
+			"size": 22688
+		},
+		{
+			"id": "kalem.soap-client",
+			"name": "SOAP Client",
+			"version": "1.0.0",
+			"description": "Calls SOAP web services from their WSDL, as SoapUI does: the services, endpoints and operations listed, a sample envelope made from the schema for each, SOAP 1.1 and 1.2, Basic auth, the response pretty and coloured, and faults shown as such. The assistant can read a WSDL and call it, when you allow each call.",
+			"publisher": "Kalem",
+			"engine": ">=3.36.0",
+			"permissions": {
+				"http": [
+					"*"
+				],
+				"assistantTools": true
+			},
+			"url": "kalem.soap-client-1.0.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlNPQVAgQ2xpZW50PC90aXRsZT48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMyZmI1ZDYiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxNzY5YWEiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0idXJsKCNnKSIvPjxnIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzLjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIyIDIybC04IDEwIDggMTAiLz48cGF0aCBkPSJNNDIgMjJsOCAxMC04IDEwIi8+PC9nPjxjaXJjbGUgY3g9IjI3IiBjeT0iMzIiIHI9IjIuNiIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjM3IiBjeT0iMzIiIHI9IjIuNiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPgo=",
+			"sha256": "b6b01fa9b0a90f59c5d0ab90bb10204b87495aeffdde877a48095f37dbf731d9",
+			"size": 17866
+		}
+	],
+	"blocked": []
+}
