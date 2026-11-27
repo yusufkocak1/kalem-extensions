@@ -1,8 +1,25 @@
 {
 	"version": 1,
 	"name": "Kalem Eklentileri",
-	"updated": "2026-11-27T05:34:27.563Z",
+	"updated": "2026-11-27T06:42:22.887Z",
 	"extensions": [
+		{
+			"id": "kalem.git",
+			"name": "Git",
+			"version": "1.0.0",
+			"description": "Git as in IntelliJ IDEA: Local Changes with a commit box (amend, commit and push, a message written by the assistant), Shelf, Stash, a Log with the branch graph and every commit action (cherry-pick, revert, reset, edit message, fixup, squash, drop, new branch or tag), branches, and a Console of the git commands run. Diffs open as tabs in the documents' place, side by side.",
+			"publisher": "Kalem",
+			"engine": ">=3.41.0",
+			"permissions": {
+				"process": true,
+				"files": true,
+				"assistantTools": true
+			},
+			"url": "kalem.git-1.0.0.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InQiPjx0aXRsZSBpZD0idCI+R2l0PC90aXRsZT48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNlMjU4M2UiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM5YTJmMWMiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHJ4PSIxNCIgZmlsbD0idXJsKCNnKSIvPjxwYXRoIGQ9Ik0yMiAxNnYzMk0yMiAyNmMwIDggMjAgNCAyMCAxNHY4IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGNpcmNsZSBjeD0iMjIiIGN5PSIxNiIgcj0iNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjIyIiBjeT0iNDgiIHI9IjUiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSI0MiIgY3k9IjQ4IiByPSI1IiBmaWxsPSIjZmZkOWNmIi8+PC9zdmc+Cg==",
+			"sha256": "b6eced20094cd93a33d7af726b7565292702e74318a7b7a1e80d53527fc1e309",
+			"size": 55720
+		},
 		{
 			"id": "kalem.graylog",
 			"name": "Graylog",
