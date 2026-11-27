@@ -1,0 +1,40 @@
+{
+  "id": "kalem.git",
+  "name": "Git",
+  "version": "1.0.0",
+  "description": "Git as in IntelliJ IDEA: Local Changes with a commit box (amend, commit and push, a message written by the assistant), Shelf, Stash, a Log with the branch graph and every commit action (cherry-pick, revert, reset, edit message, fixup, squash, drop, new branch or tag), branches, and a Console of the git commands run. Diffs open as tabs in the documents' place, side by side.",
+  "publisher": "Kalem",
+  "icon": "icon.svg",
+  "engines": { "kalem": ">=3.41.0" },
+  "host": "host.js",
+  "ui": "ui.html",
+  "permissions": {
+    "process": true,
+    "files": true,
+    "assistantTools": true
+  },
+  "contributes": {
+    "panes": [{ "id": "git", "title": "Git", "dock": "bottom" }],
+    "editors": [{ "id": "diff", "title": "Diff" }],
+    "commands": [
+      { "id": "open", "title": "Open Git" },
+      { "id": "commit", "title": "Commit…" },
+      { "id": "log", "title": "Show Git Log" },
+      { "id": "clone", "title": "Clone Repository…" }
+    ],
+    "settings": [
+      {
+        "key": "refreshSeconds",
+        "type": "number",
+        "title": "Look for changes every (seconds)",
+        "default": 5
+      },
+      {
+        "key": "autoFetchMinutes",
+        "type": "number",
+        "title": "Fetch in the background every (minutes, 0 turns it off)",
+        "default": 10
+      }
+    ]
+  }
+}

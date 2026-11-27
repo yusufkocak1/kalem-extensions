@@ -12,6 +12,7 @@ imzalar ve GitHub Pages'te yayınlar.
 | `soap-client` | SoapUI benzeri SOAP istemcisi (WSDL'den örnek zarflar); cURL, zarf ve WSDL dosyası içe aktarma |
 | `jenkins` | Jenkins ve içinde QuickPipeline: ortam ağacı, hızlı aksiyonlar, build takibi |
 | `log-viewer` | Log dosyalarını büyüdükçe izleme, seviye renkleri, arama |
+| `git` | IntelliJ'in Git penceresi gibi: Local Changes ve commit, Shelf, Stash, dal grafiğiyle Log ve commit işlemleri, dallar, Console; farklar belgelerin yerinde sekmede |
 
 ## Kalem'e eklemek
 

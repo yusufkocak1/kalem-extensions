@@ -1,0 +1,1122 @@
+:root {
+	--g-modified: #2f6fd6;
+	--g-added: #2f8a3b;
+	--g-deleted: #8a8f98;
+	--g-renamed: #2f6fd6;
+	--g-untracked: #b8521f;
+	--g-conflict: #c62828;
+	--gd-insert-bg: #e3f5e1;
+	--gd-insert-word: #b5e2b0;
+	--gd-delete-bg: #f0f1f3;
+	--gd-delete-word: #f6c6c0;
+	--gd-change-bg: #e5efff;
+	--gd-change-word: #bdd3fb;
+	--gd-filler: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--k-text) 5%, transparent) 6px 7px);
+}
+
+[data-theme="dark"] {
+	--g-modified: #6fa3f5;
+	--g-added: #6cc070;
+	--g-deleted: #9aa0a8;
+	--g-renamed: #6fa3f5;
+	--g-untracked: #e5925a;
+	--g-conflict: #f2796b;
+	--gd-insert-bg: #29402b;
+	--gd-insert-word: #3d6640;
+	--gd-delete-bg: #3a3d42;
+	--gd-delete-word: #6b3a36;
+	--gd-change-bg: #263750;
+	--gd-change-word: #345283;
+}
+
+body {
+	margin: 0;
+	font-size: 13px;
+}
+
+button:disabled {
+	cursor: default;
+	opacity: 0.45;
+}
+
+.g-offscreen {
+	position: fixed;
+	left: -9999px;
+}
+
+/* --- Menus, windows, notices ------------------------------------------------- */
+
+.g-menu {
+	position: fixed;
+	z-index: 50;
+	min-width: 220px;
+	max-height: calc(100vh - 8px);
+	padding: 4px;
+	overflow: auto;
+	border: 1px solid var(--k-line);
+	border-radius: 8px;
+	background: var(--k-panel);
+	box-shadow: var(--k-shadow);
+}
+
+.g-menu .g-menu {
+	position: absolute;
+}
+
+.g-menu-item {
+	display: grid;
+	grid-template-columns: 18px 1fr auto;
+	gap: 8px;
+	align-items: center;
+	width: 100%;
+	padding: 5px 8px;
+	border: 0;
+	border-radius: 5px;
+	background: none;
+	color: var(--k-text);
+	font: inherit;
+	text-align: left;
+	white-space: nowrap;
+}
+
+.g-menu-item:hover:not(:disabled),
+.g-menu-item:focus-visible {
+	outline: none;
+	background: var(--k-accent);
+	color: var(--k-accent-text);
+}
+
+.g-menu-item.danger:not(:disabled) {
+	color: var(--k-error);
+}
+
+.g-menu-item.danger:hover:not(:disabled) {
+	background: var(--k-error);
+	color: #fff;
+}
+
+.g-menu-icon {
+	display: inline-flex;
+	width: 16px;
+	height: 16px;
+}
+
+.g-menu-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+.g-menu-shortcut {
+	color: var(--k-muted);
+	font-size: 11px;
+}
+
+.g-menu-item:hover .g-menu-shortcut {
+	color: inherit;
+}
+
+.g-menu-line {
+	height: 1px;
+	margin: 4px 6px;
+	background: var(--k-soft-line);
+}
+
+.g-menu-heading {
+	padding: 6px 10px 2px;
+	color: var(--k-muted);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.g-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	background: color-mix(in srgb, #000 28%, transparent);
+}
+
+.g-dialog {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: min(520px, 100%);
+	max-height: 100%;
+	padding: 16px;
+	overflow: auto;
+	border: 1px solid var(--k-line);
+	border-radius: var(--k-radius-lg);
+	background: var(--k-panel);
+	box-shadow: var(--k-shadow);
+}
+
+.g-dialog h2 {
+	margin: 0;
+	font-size: 15px;
+}
+
+.g-dialog-text {
+	margin: 0;
+	color: var(--k-muted);
+	white-space: pre-wrap;
+}
+
+.g-dialog-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.g-dialog-field > span {
+	color: var(--k-muted);
+	font-size: 12px;
+}
+
+.g-dialog-check {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.g-dialog-error {
+	margin: 0;
+	color: var(--k-error);
+}
+
+.g-dialog-actions {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+}
+
+.g-notice {
+	position: fixed;
+	right: 12px;
+	bottom: 12px;
+	z-index: 70;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	max-width: min(560px, calc(100vw - 24px));
+	padding: 6px 6px 6px 12px;
+	border: 1px solid var(--k-line);
+	border-radius: 8px;
+	background: var(--k-panel);
+	box-shadow: var(--k-shadow);
+	white-space: pre-wrap;
+}
+
+.g-notice.error {
+	border-color: var(--k-error);
+	background: var(--k-error-bg);
+	color: var(--k-error);
+}
+
+.g-notice.ok {
+	border-color: color-mix(in srgb, var(--k-ok) 50%, transparent);
+}
+
+/* --- The tool window ------------------------------------------------------------ */
+
+.gp-head {
+	gap: 4px;
+	min-height: 36px;
+	padding-block: 2px;
+}
+
+.gp-head > svg {
+	width: 16px;
+	height: 16px;
+	color: var(--k-muted);
+}
+
+.gp-repo,
+.gp-repo-name {
+	max-width: 180px;
+	font-weight: 600;
+}
+
+.gp-repo-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gp-branch {
+	gap: 4px;
+	max-width: 280px;
+}
+
+.gp-branch span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gp-count {
+	color: var(--k-accent);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
+.gp-sep {
+	width: 1px;
+	height: 18px;
+	margin: 0 4px;
+	background: var(--k-soft-line);
+}
+
+.gp-busy {
+	display: inline-flex;
+	gap: 6px;
+	align-items: center;
+	color: var(--k-muted);
+	font-size: 12px;
+}
+
+.gp-banner {
+	display: flex;
+	flex: none;
+	gap: 8px;
+	align-items: center;
+	padding: 6px 12px;
+	border-bottom: 1px solid var(--k-soft-line);
+}
+
+.gp-banner > span {
+	flex: 1;
+}
+
+.gp-banner.warn {
+	background: var(--k-warn-bg);
+}
+
+.gp-banner.error {
+	background: var(--k-error-bg);
+}
+
+.gp-banner[hidden] {
+	display: none;
+}
+
+.gp-tabs {
+	flex: none;
+	padding: 0 6px;
+}
+
+.gp-tabs .k-tab {
+	height: 30px;
+}
+
+.gp-content {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.gp-content > .k-empty {
+	flex: 1;
+}
+
+.gp-empty-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: center;
+}
+
+.gp-changes,
+.gp-log {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.gp-subtools {
+	gap: 4px;
+	min-height: 32px;
+	padding-block: 2px;
+}
+
+.gp-small {
+	font-size: 12px;
+}
+
+.gp-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+.gp-split {
+	flex: 1;
+	min-height: 0;
+}
+
+.gp-split > * {
+	min-height: 0;
+	overflow: auto;
+}
+
+/* Files, as IntelliJ colours them. */
+.gp-tree {
+	padding: 2px 0;
+}
+
+.gp-group,
+.gp-file {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	min-height: 24px;
+	padding: 0 10px;
+	cursor: default;
+	user-select: none;
+	white-space: nowrap;
+}
+
+.gp-group:hover,
+.gp-file:hover {
+	background: var(--k-hover);
+}
+
+.gp-group-title {
+	font-weight: 600;
+}
+
+.gp-file {
+	padding-left: 34px;
+}
+
+.gp-file.indented {
+	padding-left: 42px;
+}
+
+.gp-detail-files .gp-file {
+	padding-left: 10px;
+}
+
+.gp-file.selected,
+.gp-group.selected {
+	background: var(--k-accent-soft);
+}
+
+.gp-file:focus-visible {
+	outline: 1px solid var(--k-accent);
+	outline-offset: -1px;
+}
+
+.gp-twisty {
+	display: inline-flex;
+	transition: transform 120ms var(--k-ease);
+}
+
+.gp-twisty svg {
+	width: 14px;
+	height: 14px;
+}
+
+.gp-twisty.open {
+	transform: rotate(90deg);
+}
+
+.gp-kind {
+	flex: none;
+	width: 14px;
+	font-family: var(--k-mono);
+	font-size: 11px;
+	font-weight: 700;
+	text-align: center;
+}
+
+.gp-file-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.gp-file-folder {
+	overflow: hidden;
+	color: var(--k-muted);
+	font-size: 12px;
+	text-overflow: ellipsis;
+}
+
+.gp-file.modified :is(.gp-kind, .gp-file-name),
+.gp-kind.modified {
+	color: var(--g-modified);
+}
+
+.gp-file.added :is(.gp-kind, .gp-file-name) {
+	color: var(--g-added);
+}
+
+.gp-file.deleted :is(.gp-kind, .gp-file-name) {
+	color: var(--g-deleted);
+}
+
+.gp-file.deleted .gp-file-name {
+	text-decoration: line-through;
+}
+
+.gp-file.renamed :is(.gp-kind, .gp-file-name) {
+	color: var(--g-renamed);
+}
+
+.gp-file.untracked :is(.gp-kind, .gp-file-name) {
+	color: var(--g-untracked);
+}
+
+.gp-file.conflict :is(.gp-kind, .gp-file-name) {
+	color: var(--g-conflict);
+}
+
+.gp-none {
+	padding: 4px 34px;
+	font-size: 12px;
+}
+
+.gp-check {
+	display: inline-flex;
+	gap: 6px;
+	align-items: center;
+}
+
+/* The commit box under the changes. */
+.gp-commit {
+	display: flex;
+	flex: none;
+	flex-direction: column;
+	gap: 6px;
+	padding: 6px 10px 8px;
+	border-top: 1px solid var(--k-soft-line);
+}
+
+.gp-commit-head {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.gp-message {
+	min-height: 64px;
+	height: 72px;
+	resize: vertical;
+	font-family: var(--k-mono);
+	font-size: 12.5px;
+}
+
+.gp-commit-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.k-button.busy svg {
+	animation: g-spin 1.2s linear infinite;
+}
+
+@keyframes g-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* Stash */
+.gp-list {
+	padding: 2px 0;
+}
+
+.gp-stash {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	gap: 8px;
+	align-items: center;
+	min-height: 26px;
+	padding: 0 10px;
+	cursor: default;
+}
+
+.gp-stash:hover {
+	background: var(--k-hover);
+}
+
+.gp-stash.selected {
+	background: var(--k-accent-soft);
+}
+
+.gp-stash-subject {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gp-hash {
+	color: var(--k-muted);
+	font-size: 12px;
+}
+
+/* Log */
+.gp-log-search {
+	width: 200px;
+	height: 26px;
+}
+
+.gp-log-user {
+	width: 120px;
+	height: 26px;
+}
+
+.gp-log-branch {
+	max-width: 220px;
+	height: 26px;
+}
+
+.gp-subtools > svg {
+	width: 14px;
+	height: 14px;
+	color: var(--k-muted);
+}
+
+.gp-path-filter {
+	gap: 2px;
+	padding-right: 2px;
+}
+
+.gp-log-split {
+	grid-template-columns: minmax(0, 1.8fr) minmax(260px, 1fr);
+}
+
+.gp-log-main {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.gp-log-rows:focus {
+	outline: none;
+}
+
+.gp-commit-row {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) minmax(80px, 160px) 130px;
+	gap: 8px;
+	align-items: center;
+	height: 24px;
+	padding-right: 10px;
+	cursor: default;
+	user-select: none;
+}
+
+.gp-commit-row:hover {
+	background: var(--k-hover);
+}
+
+.gp-commit-row.selected {
+	background: var(--k-accent-soft);
+}
+
+.gp-log-rows:focus .gp-commit-row.selected {
+	background: color-mix(in srgb, var(--k-accent) 28%, transparent);
+}
+
+.gp-commit-row.head .gp-subject {
+	font-weight: 600;
+}
+
+.gp-cell {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gp-cell-graph {
+	display: flex;
+	padding-left: 4px;
+}
+
+.gp-graph {
+	display: block;
+	overflow: visible;
+}
+
+.gp-cell-subject {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
+.gp-subject {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.gp-cell-author,
+.gp-cell-date {
+	color: var(--k-muted);
+	font-size: 12px;
+}
+
+.gp-ref {
+	display: inline-flex;
+	flex: none;
+	gap: 3px;
+	align-items: center;
+	max-width: 220px;
+	height: 18px;
+	padding: 0 6px;
+	border-radius: 4px;
+	background: color-mix(in srgb, var(--g-added) 16%, transparent);
+	color: var(--g-added);
+	font-size: 11px;
+	font-weight: 600;
+}
+
+.gp-ref span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.gp-ref svg {
+	flex: none;
+	width: 11px;
+	height: 11px;
+}
+
+.gp-ref.head {
+	background: color-mix(in srgb, #d9a400 22%, transparent);
+	color: #8a6400;
+}
+
+[data-theme="dark"] .gp-ref.head {
+	color: #f4c35e;
+}
+
+.gp-ref.remote {
+	background: color-mix(in srgb, #9b51e0 16%, transparent);
+	color: #8a3fd1;
+}
+
+[data-theme="dark"] .gp-ref.remote {
+	color: #c39bf0;
+}
+
+.gp-ref.tag {
+	background: color-mix(in srgb, var(--k-text) 10%, transparent);
+	color: var(--k-text);
+}
+
+.gp-loading {
+	display: flex;
+	justify-content: center;
+	padding: 8px;
+}
+
+.gp-detail {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.gp-detail > .k-empty {
+	flex: 1;
+}
+
+.gp-detail-files {
+	flex: 1;
+	min-height: 60px;
+	overflow: auto;
+	border-bottom: 1px solid var(--k-soft-line);
+}
+
+.gp-detail-info {
+	display: flex;
+	flex: none;
+	flex-direction: column;
+	gap: 6px;
+	max-height: 45%;
+	padding: 8px 10px;
+	overflow: auto;
+}
+
+.gp-detail-subject {
+	font-weight: 600;
+	white-space: pre-wrap;
+}
+
+.gp-detail-body {
+	margin: 0;
+	font-family: inherit;
+	white-space: pre-wrap;
+}
+
+.gp-detail-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 10px;
+	font-size: 12px;
+}
+
+.gp-detail-refs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+/* The branch popup */
+.gp-popover {
+	position: fixed;
+	z-index: 45;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	width: min(380px, calc(100vw - 8px));
+	padding: 6px;
+	border: 1px solid var(--k-line);
+	border-radius: 8px;
+	background: var(--k-panel);
+	box-shadow: var(--k-shadow);
+}
+
+.gp-pop-items {
+	min-height: 0;
+	overflow: auto;
+}
+
+.gp-pop-item {
+	display: grid;
+	grid-template-columns: 18px minmax(0, 1fr) auto auto;
+	gap: 8px;
+	align-items: center;
+	width: 100%;
+	padding: 4px 8px;
+	border: 0;
+	border-radius: 5px;
+	background: none;
+	color: var(--k-text);
+	font: inherit;
+	text-align: left;
+}
+
+.gp-pop-item:hover,
+.gp-pop-item:focus-visible {
+	outline: none;
+	background: var(--k-hover);
+}
+
+.gp-pop-item.current .gp-pop-label {
+	font-weight: 700;
+}
+
+.gp-pop-label,
+.gp-pop-note {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gp-pop-note {
+	max-width: 140px;
+	font-size: 11px;
+}
+
+.gp-pop-more {
+	color: var(--k-muted);
+}
+
+/* Push */
+.gp-push-list {
+	max-height: 260px;
+	overflow: auto;
+	border: 1px solid var(--k-soft-line);
+	border-radius: 6px;
+}
+
+.gp-push-row {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	gap: 8px;
+	padding: 4px 8px;
+}
+
+.gp-push-subject {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gp-push-list > p {
+	margin: 8px;
+}
+
+/* Console */
+.gp-console {
+	padding: 6px 10px;
+	font-family: var(--k-mono);
+	font-size: 12px;
+}
+
+.gp-console-entry + .gp-console-entry {
+	margin-top: 6px;
+}
+
+.gp-console-command {
+	display: flex;
+	gap: 10px;
+}
+
+.gp-console-text {
+	flex: 1;
+	color: var(--k-accent);
+	word-break: break-all;
+}
+
+.gp-console-entry.failed .gp-console-text,
+.gp-console-entry.failed .gp-console-output {
+	color: var(--k-error);
+}
+
+.gp-console-output {
+	margin: 2px 0 0 0;
+	padding-left: 12px;
+	color: var(--k-muted);
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+/* --- The diff in the documents' place ---------------------------------------------- */
+
+.gd {
+	background: var(--k-panel);
+}
+
+.gd-toolbar {
+	gap: 4px;
+	min-height: 36px;
+	padding-block: 2px;
+}
+
+.gd-sep {
+	width: 1px;
+	height: 18px;
+	margin: 0 4px;
+	background: var(--k-soft-line);
+}
+
+.gd-count {
+	min-width: 64px;
+	color: var(--k-muted);
+	font-size: 12px;
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+}
+
+.gd-files {
+	max-width: 320px;
+	height: 26px;
+}
+
+.gd-header {
+	display: grid;
+	flex: none;
+	grid-template-columns: 1fr 1fr;
+	border-bottom: 1px solid var(--k-soft-line);
+	background: var(--k-bg);
+}
+
+.gd-header.unified {
+	grid-template-columns: 1fr auto;
+}
+
+.gd-head-side {
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+	min-width: 0;
+	padding: 4px 10px 4px 56px;
+}
+
+.gd-head-side + .gd-head-side {
+	border-left: 1px solid var(--k-soft-line);
+}
+
+.gd-header.unified .gd-head-side {
+	padding-left: 10px;
+}
+
+.gd-head-label {
+	flex: none;
+	font-weight: 600;
+}
+
+.gd-head-path {
+	overflow: hidden;
+	color: var(--k-muted);
+	font-size: 12px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.gd-body {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+	font-family: var(--k-mono);
+	font-size: 12.5px;
+	line-height: 19px;
+}
+
+.gd-body:focus {
+	outline: none;
+}
+
+.gd-body > .k-empty {
+	height: 100%;
+	font-family: inherit;
+}
+
+.gd-row {
+	display: grid;
+}
+
+.gd-body.side .gd-row {
+	grid-template-columns: 48px minmax(0, 1fr) 22px 48px minmax(0, 1fr);
+}
+
+.gd-body.unified .gd-row {
+	grid-template-columns: 48px 48px 18px minmax(0, 1fr);
+}
+
+.gd-num {
+	padding-right: 8px;
+	color: var(--k-muted);
+	text-align: right;
+	user-select: none;
+	font-variant-numeric: tabular-nums;
+	background: var(--k-bg);
+}
+
+.gd-code {
+	min-width: 0;
+	padding: 0 8px;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	tab-size: 4;
+}
+
+.gd-gutter {
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	border-inline: 1px solid var(--k-soft-line);
+	background: var(--k-bg);
+}
+
+.gd-sign {
+	color: var(--k-muted);
+	text-align: center;
+	user-select: none;
+}
+
+.gd-row.insert .gd-code.right,
+.gd-row.added .gd-code {
+	background: var(--gd-insert-bg);
+}
+
+.gd-row.delete .gd-code.left,
+.gd-row.removed .gd-code {
+	background: var(--gd-delete-bg);
+}
+
+.gd-row.removed .gd-code {
+	background: color-mix(in srgb, var(--gd-delete-word) 45%, transparent);
+}
+
+.gd-row.change .gd-code {
+	background: var(--gd-change-bg);
+}
+
+.gd-code.filler {
+	background: var(--gd-filler) !important;
+}
+
+.gd-row.change .gd-word,
+.gd-row.removed .gd-word {
+	border-radius: 2px;
+	background: var(--gd-change-word);
+}
+
+.gd-row.removed .gd-word {
+	background: var(--gd-delete-word);
+}
+
+.gd-row.added .gd-word {
+	border-radius: 2px;
+	background: var(--gd-insert-word);
+}
+
+.gd-row.change .gd-code.left .gd-word {
+	background: color-mix(in srgb, var(--gd-change-word) 80%, var(--gd-delete-word));
+}
+
+.gd-row:not(.equal) .gd-num {
+	color: var(--k-text);
+}
+
+.gd-row.gd-current .gd-num {
+	box-shadow: inset 3px 0 0 var(--k-accent);
+}
+
+.gd-revert {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	margin-top: 1px;
+	padding: 0;
+	border: 0;
+	border-radius: 4px;
+	background: none;
+	color: var(--k-accent);
+}
+
+.gd-revert svg {
+	width: 14px;
+	height: 14px;
+}
+
+.gd-revert:hover {
+	background: var(--k-accent-soft);
+}
+
+.gd-fold {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 22px;
+	border: 0;
+	border-block: 1px dashed var(--k-soft-line);
+	background: var(--k-bg);
+	color: var(--k-muted);
+	font: 12px var(--k-mono);
+}
+
+.gd-fold svg {
+	width: 12px;
+	height: 12px;
+}
+
+.gd-fold:hover {
+	color: var(--k-text);
+}
+
+.gd-status {
+	gap: 8px;
+}
