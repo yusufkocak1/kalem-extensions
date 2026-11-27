@@ -1,7 +1,7 @@
 {
 	"version": 1,
 	"name": "Kalem Eklentileri",
-	"updated": "2026-11-26T08:12:57.858Z",
+	"updated": "2026-11-27T05:34:27.563Z",
 	"extensions": [
 		{
 			"id": "kalem.graylog",
@@ -159,6 +159,23 @@
 			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlJ1biBDb25maWd1cmF0aW9uczwvdGl0bGU+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMzRjMzhmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTI3YTViIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNMjUgMTkuNXYyNWEyIDIgMCAwIDAgMy4wNSAxLjdsMjAtMTIuNWEyIDIgMCAwIDAgMC0zLjRsLTIwLTEyLjVBMiAyIDAgMCAwIDI1IDE5LjV6IiBmaWxsPSIjZmZmIi8+PC9zdmc+Cg==",
 			"sha256": "5b90c6da22449e1e5472f606a53c718ca3305fdd0431730b8fac68905a9ad4ec",
 			"size": 33969
+		},
+		{
+			"id": "kalem.run-configurations",
+			"name": "Run Configurations",
+			"version": "1.1.2",
+			"description": "Runs your applications as an IDE does: Tomcat, Java applications and JARs, Maven, Gradle, npm scripts (Vue, React, Angular…) and any command, with their output in a Run panel. The configurations are kept in the folder (.kalem/run.json), to share with the team. Tomcat is set up as in IntelliJ IDEA: the WAR and exploded artifacts of the folder's Maven and Gradle modules are found and built before launch, several deployed each at its own context.",
+			"publisher": "Kalem",
+			"engine": ">=3.35.0",
+			"permissions": {
+				"process": true,
+				"files": true,
+				"assistantTools": true
+			},
+			"url": "kalem.run-configurations-1.1.2.kalem-ext",
+			"icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHRpdGxlPlJ1biBDb25maWd1cmF0aW9uczwvdGl0bGU+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJnIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMzRjMzhmIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMTI3YTViIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9InVybCgjZykiLz48cGF0aCBkPSJNMjUgMTkuNXYyNWEyIDIgMCAwIDAgMy4wNSAxLjdsMjAtMTIuNWEyIDIgMCAwIDAgMC0zLjRsLTIwLTEyLjVBMiAyIDAgMCAwIDI1IDE5LjV6IiBmaWxsPSIjZmZmIi8+PC9zdmc+Cg==",
+			"sha256": "da6ec1447cd38336d57f130feedb7ade326260c15ce4490da150d187a49ef619",
+			"size": 33991
 		},
 		{
 			"id": "kalem.soap-client",
